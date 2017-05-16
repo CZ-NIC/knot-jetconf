@@ -1,0 +1,16 @@
+{
+	"dns-zone-rpcs:input": {
+		"zone": "newzone.cz",
+		"type": "iana-dns-parameters:SOA",
+		"ttl": 1234,
+		"SOA": {
+			"mname": "dns1.newzone.cz",
+			"rname": "hostmaster.newzone.cz",
+			"serial": 20170202,
+			"refresh": 200,
+			"retry": 300,
+			"expire": 400,
+			"minimum": 500
+		}
+	}
+}

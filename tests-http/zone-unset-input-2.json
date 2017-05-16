@@ -1,0 +1,10 @@
+{
+	"dns-zone-rpcs:input": {
+		"zone": "example.com",
+		"owner": "dns1.example.com",
+		"type": "iana-dns-parameters:A",
+		"A": {
+			"address": "192.0.2.3"
+		}
+	}
+}
