@@ -1,79 +1,17 @@
-import json
-
 from colorlog import error
 
-from yangson.datamodel import DataModel
-from yangson.instance import InstanceRoute, InstanceNode, EntryKeys, NonexistentInstance, RootNode
+from yangson.instance import InstanceRoute
 
-from .knot_api import KNOT, KnotInternalError
-from .helpers import DataHelpers, JsonNodeT
-from .handler_list import StateDataHandlerList
+from .knot_api import KNOT
+from .helpers import JsonNodeT
+from .handler_list import STATE_DATA_HANDLES, StateDataContainerHandler, StateDataListHandler
+from .data import BaseDatastore
 from .usr_op_handlers import OP_HANDLERS_IMPL as OH, KnotZoneCmd
 
 
-class StateNonexistentInstance(NonexistentInstance):
-    def __init__(self, ii: InstanceRoute, text: str) -> None:
-        self.ii = ii
-        self.text = text
+# ---------- User-defined handlers follow ----------
 
-    def __str__(self):
-        return str(self.ii) + ": " + self.text
-
-
-class StateNodeHandlerBase:
-    def __init__(self, data_model: DataModel, schema_path: str):
-        self.data_model = data_model
-        self.sch_pth = schema_path
-        self.schema_node = data_model.get_data_node(self.sch_pth)
-
-
-class ContainerNodeHandlerBase(StateNodeHandlerBase):
-    def generate_node(self, node_ii: InstanceRoute, username: str, staging: bool) -> JsonNodeT:
-        pass
-
-
-class ListNodeHandlerBase(StateNodeHandlerBase):
-    def generate_list(self, node_ii: InstanceRoute, username: str, staging: bool) -> JsonNodeT:
-        pass
-
-    def generate_item(self, node_ii: InstanceRoute, username: str, staging: bool) -> JsonNodeT:
-        pass
-
-
-class ZoneSigningStateHandler(ContainerNodeHandlerBase):
-    def __init__(self, data_model: DataModel):
-        super().__init__(data_model, "/dns-server:dns-server-state/zone/dnssec-signing:dnssec-signing")
-
-    def generate_node(self, node_ii: InstanceRoute, username: str, staging: bool) -> JsonNodeT:
-        print("zone_state_signing_handler, ii = {}".format(node_ii))
-        domain_name = node_ii[2].keys.get(("domain", None)) + "."
-
-        zone_signing = {
-            "enabled": True,
-            "key": [
-                {
-                    "key-id": "d3a9fd3b36a6be275adea2b67c6e82b27ca30e90",
-                    "key-tag": 30348,
-                    "algorithm": "RSASHA256",
-                    "size": 2048,
-                    "flags": "zone-key secure-entry-point",
-                    "created": "2015-06-18T18:02:45+02:00",
-                    "publish": "2015-06-18T19:00:00+02:00",
-                    "retire": "2015-07-18T18:02:45+02:00",
-                    "remove": "2015-07-25T00:00:00+02:00"
-                }
-            ]
-        }
-
-        retval = zone_signing
-
-        return retval
-
-
-class ZoneStateHandler(ListNodeHandlerBase):
-    def __init__(self, data_model: DataModel):
-        super().__init__(data_model, "/dns-server:dns-server-state/zone")
-
+class ZoneStateHandler(StateDataListHandler):
     def generate_list(self, node_ii: InstanceRoute, username: str, staging: bool) -> JsonNodeT:
         zones_list = []
 
@@ -120,10 +58,7 @@ class ZoneStateHandler(ListNodeHandlerBase):
         return zone_obj
 
 
-class ZoneDataStateHandler(ListNodeHandlerBase):
-    def __init__(self, data_model: DataModel):
-        super().__init__(data_model, "/dns-zones-state:zone")
-
+class ZoneDataStateHandler(StateDataListHandler):
     @staticmethod
     def _transform_zone(domain_name: str, domain_data_raw: JsonNodeT) -> JsonNodeT:
         zone_out = {
@@ -343,59 +278,7 @@ class ZoneDataStateHandler(ListNodeHandlerBase):
         return zone_data
 
 
-#     +---x zone-set
-#     |  +---w input
-#     |     +---w zone          inet:domain-name
-#     |     +---w owner         domain-name
-#     |     +---w type          identityref
-#     |     +---w ttl           time-interval
-#     |     +---w (rdata-content)
-#     |        +--:(SOA)
-#     |        |  +---w SOA
-#     |        |     +---w mname      domain-name
-#     |        |     +---w rname      domain-name
-#     |        |     +---w serial     yang:counter32
-#     |        |     +---w refresh    time-interval
-#     |        |     +---w retry      time-interval
-#     |        |     +---w expire     time-interval
-#     |        |     +---w minimum    time-interval
-#     |        +--:(A)
-#     |        |  +---w A
-#     |        |     +---w address    inet:ipv4-address-no-zone
-
-
-# "class": "IN",
-# "name": "turris.cz",
-# "rrset": [
-#     {
-#         "type": "iana-dns-parameters:CNAME",
-#         "ttl": 1800,
-#         "owner": "buy.turris.cz",
-#         "rdata": [
-#             {
-#                 "CNAME": {
-#                     "cname": "omnia.turris.cz."
-#                 }
-#             }
-#         ]
-#     },
-#     {
-#         "type": "iana-dns-parameters:A",
-#         "ttl": 1800,
-#         "owner": "at.turris.cz",
-#         "rdata": [
-#             {
-#                 "A": {
-#                     "address": "217.31.192.107"
-#                 }
-#             }
-#         ]
-#     },
-
-class PokusStateHandler(ContainerNodeHandlerBase):
-    def __init__(self, data_model: DataModel):
-        super().__init__(data_model, "/dns-server:dns-server/access-control-list/network/pokus")
-
+class PokusStateHandler(StateDataContainerHandler):
     def generate_node(self, node_ii: InstanceRoute, username: str, staging: bool) -> JsonNodeT:
         print("pokus_handler, ii = {}".format(node_ii))
         try:
@@ -407,10 +290,10 @@ class PokusStateHandler(ContainerNodeHandlerBase):
 
 
 # Instantiate state data handlers
-def create_zone_state_handlers(handler_list: "StateDataHandlerList", dm: DataModel):
-    zsh = ZoneStateHandler(dm)
-    zdsh = ZoneDataStateHandler(dm)
-    psh = PokusStateHandler(dm)
-    handler_list.register(zsh)
-    handler_list.register(zdsh)
-    handler_list.register(psh)
+def register_state_handlers(ds: BaseDatastore):
+    zsh = ZoneStateHandler(ds, "/dns-server:dns-server-state/zone")
+    zdsh = ZoneDataStateHandler(ds, "/dns-zones-state:zone")
+    psh = PokusStateHandler(ds, "/dns-server:dns-server/access-control-list/network/pokus")
+    STATE_DATA_HANDLES.register(zsh)
+    STATE_DATA_HANDLES.register(zdsh)
+    STATE_DATA_HANDLES.register(psh)

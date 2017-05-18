@@ -1,14 +1,17 @@
 from typing import List, Dict, Union, Any
 
-from yangson.instance import InstanceRoute, ObjectValue, EntryKeys, MemberName
-from .data import BaseDatastore, SchemaNode, ChangeType, DataChange
-from .helpers import PathFormat, ErrorHelpers, LogHelpers, DataHelpers
+from yangson.instance import InstanceRoute, ObjectValue, EntryKeys
+from .data import BaseDatastore, ChangeType, DataChange
+from .helpers import ErrorHelpers, LogHelpers
 from .knot_api import KNOT, RRecordBase, SOARecord, ARecord, AAAARecord, NSRecord, MXRecord
 from .handler_list import ConfDataObjectHandler, ConfDataListHandler, CONF_DATA_HANDLES
 
 JsonNodeT = Union[Dict[str, Any], List]
 epretty = ErrorHelpers.epretty
 debug_confh = LogHelpers.create_module_dbg_logger(__name__)
+
+
+# ---------- User-defined handlers follow ----------
 
 
 # Config handler for "server" section

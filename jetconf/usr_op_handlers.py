@@ -5,7 +5,10 @@ from colorlog import error, warning as warn, info
 from . import knot_api
 from .helpers import JsonNodeT
 from .knot_api import SOARecord, ARecord, AAAARecord, MXRecord
+from .handler_list import OP_HANDLERS
 
+
+# ---------- User-defined handlers follow ----------
 
 class KnotZoneCmd(Enum):
     SET = 0
@@ -103,8 +106,10 @@ class OpHandlersContainer:
 
 OP_HANDLERS_IMPL = OpHandlersContainer()
 
-# OP_HANDLERS.register("dns-zone-rpcs:begin-transaction", OP_HANDLERS_IMPL.zone_begin_transaction)
-    # OP_HANDLERS.register("dns-zone-rpcs:commit-transaction", OP_HANDLERS_IMPL.zone_commit_transaction)
-    # OP_HANDLERS.register("dns-zone-rpcs:abort-transaction", OP_HANDLERS_IMPL.zone_abort_transaction)
-    # OP_HANDLERS.register("dns-zone-rpcs:zone-set", OP_HANDLERS_IMPL.zone_set)
-    # OP_HANDLERS.register("dns-zone-rpcs:zone-unset", OP_HANDLERS_IMPL.zone_unset)
+
+def register_op_handlers():
+    OP_HANDLERS.register(OP_HANDLERS_IMPL.zone_begin_transaction, "dns-zone-rpcs:begin-transaction")
+    OP_HANDLERS.register(OP_HANDLERS_IMPL.zone_commit_transaction, "dns-zone-rpcs:commit-transaction")
+    OP_HANDLERS.register(OP_HANDLERS_IMPL.zone_abort_transaction, "dns-zone-rpcs:abort-transaction")
+    OP_HANDLERS.register(OP_HANDLERS_IMPL.zone_set, "dns-zone-rpcs:zone-set")
+    OP_HANDLERS.register(OP_HANDLERS_IMPL.zone_unset, "dns-zone-rpcs:zone-unset")
