@@ -104,12 +104,11 @@ class OpHandlersContainer:
         usr_op_journal.append(KnotOp(KnotZoneCmd.UNSET, input_args))
 
 
-OP_HANDLERS_IMPL = OpHandlersContainer()
+def register_op_handlers(ds: BaseDatastore):
+    op_handlers_obj = OpHandlersContainer()
+    OP_HANDLERS.register(op_handlers_obj.zone_begin_transaction, "dns-zone-rpcs:begin-transaction")
+    OP_HANDLERS.register(op_handlers_obj.zone_commit_transaction, "dns-zone-rpcs:commit-transaction")
+    OP_HANDLERS.register(op_handlers_obj.zone_abort_transaction, "dns-zone-rpcs:abort-transaction")
+    OP_HANDLERS.register(op_handlers_obj.zone_set, "dns-zone-rpcs:zone-set")
+    OP_HANDLERS.register(op_handlers_obj.zone_unset, "dns-zone-rpcs:zone-unset")
 
-
-def register_op_handlers():
-    OP_HANDLERS.register(OP_HANDLERS_IMPL.zone_begin_transaction, "dns-zone-rpcs:begin-transaction")
-    OP_HANDLERS.register(OP_HANDLERS_IMPL.zone_commit_transaction, "dns-zone-rpcs:commit-transaction")
-    OP_HANDLERS.register(OP_HANDLERS_IMPL.zone_abort_transaction, "dns-zone-rpcs:abort-transaction")
-    OP_HANDLERS.register(OP_HANDLERS_IMPL.zone_set, "dns-zone-rpcs:zone-set")
-    OP_HANDLERS.register(OP_HANDLERS_IMPL.zone_unset, "dns-zone-rpcs:zone-unset")
