@@ -6,6 +6,7 @@ from . import knot_api
 from .helpers import JsonNodeT
 from .knot_api import SOARecord, ARecord, AAAARecord, MXRecord
 from .handler_list import OP_HANDLERS
+from .data import BaseDatastore
 
 
 # ---------- User-defined handlers follow ----------
