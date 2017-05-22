@@ -6,7 +6,7 @@ from .knot_api import KNOT
 from .helpers import JsonNodeT
 from .handler_list import STATE_DATA_HANDLES, StateDataContainerHandler, StateDataListHandler
 from .data import BaseDatastore
-from .usr_op_handlers import OP_HANDLERS_IMPL as OH, KnotZoneCmd
+from .usr_op_handlers import KnotZoneCmd, get_op_container
 
 
 # ---------- User-defined handlers follow ----------
@@ -182,7 +182,7 @@ class ZoneDataStateHandler(StateDataListHandler):
 
         if staging:
             print("{}: generating staging state data".format(username))
-            usr_op_journal = OH.op_journal.get(username, [])
+            usr_op_journal = get_op_container().op_journal.get(username, [])
             for knot_op in usr_op_journal:
                 input_args = knot_op.op_input
                 input_domain = input_args["dns-zone-rpcs:zone"]

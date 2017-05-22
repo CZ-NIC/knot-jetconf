@@ -11,6 +11,9 @@ from .data import BaseDatastore
 
 # ---------- User-defined handlers follow ----------
 
+OP_HANDLERS_IMPL = None     # type: OpHandlersContainer
+
+
 class KnotZoneCmd(Enum):
     SET = 0
     UNSET = 1
@@ -105,8 +108,14 @@ class OpHandlersContainer:
         usr_op_journal.append(KnotOp(KnotZoneCmd.UNSET, input_args))
 
 
+def get_op_container() -> OpHandlersContainer:
+    return OP_HANDLERS_IMPL
+
+
 def register_op_handlers(ds: BaseDatastore):
+    global OP_HANDLERS_IMPL
     op_handlers_obj = OpHandlersContainer()
+    OP_HANDLERS_IMPL = op_handlers_obj
     OP_HANDLERS.register(op_handlers_obj.zone_begin_transaction, "dns-zone-rpcs:begin-transaction")
     OP_HANDLERS.register(op_handlers_obj.zone_commit_transaction, "dns-zone-rpcs:commit-transaction")
     OP_HANDLERS.register(op_handlers_obj.zone_abort_transaction, "dns-zone-rpcs:abort-transaction")
