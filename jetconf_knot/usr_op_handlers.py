@@ -2,11 +2,12 @@ from enum import Enum
 from typing import Dict, List
 from colorlog import error, warning as warn, info
 
+from jetconf.helpers import JsonNodeT
+from jetconf.handler_list import OP_HANDLERS
+from jetconf.data import BaseDatastore
+
 from . import knot_api
-from .helpers import JsonNodeT
 from .knot_api import SOARecord, ARecord, AAAARecord, MXRecord
-from .handler_list import OP_HANDLERS
-from .data import BaseDatastore
 
 
 # ---------- User-defined handlers follow ----------

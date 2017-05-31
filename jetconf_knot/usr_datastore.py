@@ -4,11 +4,11 @@ from colorlog import error
 
 from yangson.datamodel import DataModel
 from yangson.instance import NonexistentInstance
+from jetconf.config import CONFIG_KNOT
+from jetconf.data import JsonDatastore
+from jetconf.helpers import ErrorHelpers
 
-from .config import CONFIG_KNOT
-from .data import JsonDatastore
 from .knot_api import KNOT, KnotError, knot_connect, knot_disconnect
-from .helpers import ErrorHelpers
 
 
 class UserDatastore(JsonDatastore):

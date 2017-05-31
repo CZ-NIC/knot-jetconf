@@ -1,10 +1,11 @@
 from typing import List, Dict, Union, Any
 
 from yangson.instance import InstanceRoute, ObjectValue, EntryKeys
-from .data import BaseDatastore, ChangeType, DataChange
-from .helpers import ErrorHelpers, LogHelpers
+from jetconf.data import BaseDatastore, ChangeType, DataChange
+from jetconf.helpers import ErrorHelpers, LogHelpers
+from jetconf.handler_list import ConfDataObjectHandler, ConfDataListHandler, CONF_DATA_HANDLES
+
 from .knot_api import KNOT, RRecordBase, SOARecord, ARecord, AAAARecord, NSRecord, MXRecord
-from .handler_list import ConfDataObjectHandler, ConfDataListHandler, CONF_DATA_HANDLES
 
 JsonNodeT = Union[Dict[str, Any], List]
 epretty = ErrorHelpers.epretty

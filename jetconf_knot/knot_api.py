@@ -4,8 +4,8 @@ from enum import Enum
 from typing import List, Union, Dict, Any, Optional
 from threading import Lock
 
-from .helpers import LogHelpers
-from .errors import BackendError
+from jetconf.helpers import LogHelpers
+from jetconf.errors import BackendError
 
 try:
     from .libknot.control import KnotCtl, KnotCtlType, KnotCtlError
