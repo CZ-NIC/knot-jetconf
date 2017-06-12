@@ -1,5 +1,6 @@
 *.pyc
 bin
+dist
 docs/_build
 include
 *.egg-info
@@ -10,4 +11,3 @@ TAGS
 .eggs
 .idea
 __pycache__
-jetconf/__pycache__
