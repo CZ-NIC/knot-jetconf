@@ -97,17 +97,17 @@ class OpHandlersContainer:
 
                 if rrdata:
                     if rr_type == "A":
-                        rr = ARecord(input_args["dns-zone-rpcs:owner"], input_args["dns-zone-rpcs:ttl"])
+                        rr = ARecord(input_args["dns-zone-rpcs:owner"], 0)
                         rr.address = rrdata["address"]
                     elif rr_type == "AAAA":
-                        rr = AAAARecord(input_args["dns-zone-rpcs:owner"], input_args["dns-zone-rpcs:ttl"])
+                        rr = AAAARecord(input_args["dns-zone-rpcs:owner"], 0)
                         rr.address = rrdata["address"]
                     elif rr_type == "MX":
-                        rr = MXRecord(input_args["dns-zone-rpcs:owner"], input_args["dns-zone-rpcs:ttl"])
+                        rr = MXRecord(input_args["dns-zone-rpcs:owner"], 0)
                         rr.preference = rrdata["preference"]
                         rr.exchange = rrdata["exchange"]
                     elif rr_type == "CNAME":
-                        rr = CNAMERecord(input_args["dns-zone-rpcs:owner"], input_args["dns-zone-rpcs:ttl"])
+                        rr = CNAMERecord(input_args["dns-zone-rpcs:owner"], 0)
                         rr.cname = rrdata["cname"]
                     else:
                         rr = None
