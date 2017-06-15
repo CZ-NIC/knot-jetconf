@@ -132,7 +132,7 @@ class KnotConfZoneListener(ConfDataListHandler):
         debug_confh(self.__class__.__name__ + " create triggered")
 
         # Create new zone
-        domain = ch.data["dns-server:zone"]["domain"]
+        domain = ch.input_data["dns-server:zone"]["domain"]
         debug_confh("Creating new zone \"{}\"".format(domain))
         KNOT.zone_new(domain)
 
@@ -140,7 +140,7 @@ class KnotConfZoneListener(ConfDataListHandler):
         debug_confh(self.__class__.__name__ + " replace triggered")
         print(ii)
         # Edit particular zone
-        domain = ii[3].keys["domain"]
+        domain = ii[3].keys[("domain", None)]
         debug_confh("Editing config of zone \"{}\"".format(domain))
 
         # Write whole zone config to Knot
@@ -234,7 +234,7 @@ class KnotConfZoneListener(ConfDataListHandler):
 
         # Delete zone
         if (len(ii) == 4) and isinstance(ii[3], EntryKeys) and (ch.change_type == ChangeType.DELETE):
-            domain = ii[3].keys["domain"]
+            domain = ii[3].keys[("domain", None)]
             debug_confh("Deleting zone \"{}\"".format(domain))
             KNOT.zone_remove(domain, False)
 
