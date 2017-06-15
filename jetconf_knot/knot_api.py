@@ -45,7 +45,7 @@ class KnotConfState(Enum):
 
 class RRecordBase:
     def __init__(self, owner: str, res_type: str, ttl: Optional[int]=None):
-        self.owner = owner
+        self.owner = owner or "@"
         self.type = res_type
         self.ttl = ttl
 
@@ -72,6 +72,15 @@ class SOARecord(RRecordBase):
         return "{} {} {} {} {} {} {}".format(
             self.mname, self.rname, self.serial, self.refresh, self.retry, self.expire, self.minimum
         )
+
+
+class CNAMERecord(RRecordBase):
+    def __init__(self, owner: str, ttl: Optional[int]=None):
+        super().__init__(owner, "CNAME", ttl)
+        self.cname = None       # type: str
+
+    def rrdata_format(self) -> str:
+        return self.cname
 
 
 class NSRecord(RRecordBase):

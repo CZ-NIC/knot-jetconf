@@ -7,7 +7,7 @@ from jetconf.handler_list import OP_HANDLERS
 from jetconf.data import BaseDatastore
 
 from . import knot_api
-from .knot_api import SOARecord, ARecord, AAAARecord, MXRecord
+from .knot_api import SOARecord, ARecord, AAAARecord, MXRecord, CNAMERecord
 
 
 # ---------- User-defined handlers follow ----------
@@ -74,11 +74,49 @@ class OpHandlersContainer:
                 elif rr_type == "MX":
                     rrdata = input_args["dns-zone-rpcs:MX"]
                     rr = MXRecord(input_args["dns-zone-rpcs:owner"], input_args["dns-zone-rpcs:ttl"])
-                    rr.address = rrdata["address"]
+                    rr.preference = rrdata["preference"]
+                    rr.exchange = rrdata["exchange"]
+                    knot_api.KNOT.zone_add_record(domain, rr)
+                elif rr_type == "CNAME":
+                    rrdata = input_args["dns-zone-rpcs:CNAME"]
+                    rr = CNAMERecord(input_args["dns-zone-rpcs:owner"], input_args["dns-zone-rpcs:ttl"])
+                    rr.cname = rrdata["cname"]
                     knot_api.KNOT.zone_add_record(domain, rr)
 
             elif knot_op.cmd == KnotZoneCmd.UNSET:
-                pass
+                input_args = knot_op.op_input
+                domain = input_args["dns-zone-rpcs:zone"]
+                owner = input_args.get("dns-zone-rpcs:owner")
+
+                try:
+                    rr_type = input_args["dns-zone-rpcs:type"][0]
+                    rrdata = input_args["dns-zone-rpcs:" + rr_type]
+                except KeyError:
+                    rr_type = None
+                    rrdata = None
+
+                if rrdata:
+                    if rr_type == "A":
+                        rr = ARecord(input_args["dns-zone-rpcs:owner"], input_args["dns-zone-rpcs:ttl"])
+                        rr.address = rrdata["address"]
+                    elif rr_type == "AAAA":
+                        rr = AAAARecord(input_args["dns-zone-rpcs:owner"], input_args["dns-zone-rpcs:ttl"])
+                        rr.address = rrdata["address"]
+                    elif rr_type == "MX":
+                        rr = MXRecord(input_args["dns-zone-rpcs:owner"], input_args["dns-zone-rpcs:ttl"])
+                        rr.preference = rrdata["preference"]
+                        rr.exchange = rrdata["exchange"]
+                    elif rr_type == "CNAME":
+                        rr = CNAMERecord(input_args["dns-zone-rpcs:owner"], input_args["dns-zone-rpcs:ttl"])
+                        rr.cname = rrdata["cname"]
+                    else:
+                        rr = None
+
+                    selector = rr.rrdata_format() if rr is not None else None
+                else:
+                    selector = None
+
+                knot_api.KNOT.zone_del_record(domain, owner, rr_type, selector)
 
         knot_api.KNOT.commit()
         knot_api.KNOT.knot_disconnect()
