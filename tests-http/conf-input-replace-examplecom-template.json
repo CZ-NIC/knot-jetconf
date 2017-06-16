@@ -1,0 +1,20 @@
+{
+    "dns-server:zone":{
+        "domain":"example.com",
+        "template":"default",
+        "any-to-tcp":false,
+        "access-control-list":[
+            "acl_local"
+        ],
+        "query-module":[
+            {
+                "type":"knot-dns:synth-record",
+                "name":"test1"
+            },
+            {
+                "type":"knot-dns:synth-record",
+                "name":"test2"
+            }
+        ]
+    }
+}
