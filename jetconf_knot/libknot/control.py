@@ -25,6 +25,8 @@ Example:
         ctl.close()
 """
 
+import sys
+
 from ctypes import cdll, c_void_p, c_int, c_char_p, c_uint, byref
 from enum import IntEnum
 
@@ -38,7 +40,7 @@ CTL_RECEIVE = None
 CTL_ERROR = None
 
 
-def load_lib(path="libknot.so"):
+def load_lib(path: str):
     """Loads the libknot library."""
 
     LIB = cdll.LoadLibrary(path)
@@ -162,12 +164,16 @@ class KnotCtlData(object):
 
         self.data[index] = c_char_p(value.encode()) if value else c_char_p()
 
+
 class KnotCtl(object):
     """Libknot server control interface."""
 
     def __init__(self):
-        if not CTL_ALLOC:
-            load_lib()
+        if sys.platform == "darwin":
+            load_lib("libknot.dylib")
+        else:
+            load_lib("libknot.so")
+
         self.obj = CTL_ALLOC()
 
     def __del__(self):
