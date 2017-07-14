@@ -93,7 +93,7 @@ class KnotCtlError(Exception):
         self.data = data
 
     def __str__(self):
-        return "message: %s\ndata: %s" % (self.message, self.data)
+        return "%s (data: %s)" % (self.message, self.data)
 
 
 class KnotCtlType(IntEnum):
@@ -119,6 +119,7 @@ class KnotCtlDataIdx(IntEnum):
     TTL = 8
     TYPE = 9
     DATA = 10
+    FILTER = 11
 
 
 class KnotCtlData(object):
@@ -225,7 +226,8 @@ class KnotCtl(object):
         return KnotCtlType(data_type.value)
 
     def send_block(self, cmd, section=None, item=None, identifier=None, zone=None,
-                   owner=None, ttl=None, rtype=None, data=None, flags=None):
+                   owner=None, ttl=None, rtype=None, data=None, flags=None,
+                   filter=None):
         """Sends a control query block.
 
         @type cmd: str
@@ -237,6 +239,7 @@ class KnotCtl(object):
         @type ttl: str
         @type rtype: str
         @type data: str
+        @type filter: str
         """
 
         query = KnotCtlData()
@@ -250,6 +253,7 @@ class KnotCtl(object):
         query[KnotCtlDataIdx.TYPE] = rtype
         query[KnotCtlDataIdx.DATA] = data
         query[KnotCtlDataIdx.FLAGS] = flags
+        query[KnotCtlDataIdx.FILTER] = filter
 
         self.send(KnotCtlType.DATA, query)
         self.send(KnotCtlType.BLOCK)
@@ -330,7 +334,7 @@ class KnotCtl(object):
         section = reply[KnotCtlDataIdx.SECTION]
         item = reply[KnotCtlDataIdx.ITEM]
         idx = reply[KnotCtlDataIdx.ID]
-        data = reply[KnotCtlDataIdx.DATA]
+        data = int(reply[KnotCtlDataIdx.DATA])
 
         # Add the zone if not exists.
         if zone:
