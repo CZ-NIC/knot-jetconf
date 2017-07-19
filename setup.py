@@ -16,7 +16,7 @@ setup(
     url = "https://gitlab.labs.nic.cz/labs/jetconf-knot",
     author = "Pavel Spirek",
     author_email = "pavel.spirek@nic.cz",
-    install_requires = ["jetconf"],
+    install_requires = ["jetconf", "libknot"],
     keywords = ["RESTCONF", "yang", "data model", "Jetconf"],
     classifiers = [
         "Programming Language :: Python",
