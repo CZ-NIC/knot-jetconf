@@ -8,7 +8,7 @@ from jetconf.helpers import LogHelpers
 from jetconf.errors import BackendError
 
 try:
-    from .libknot.control import KnotCtl, KnotCtlType, KnotCtlError
+    from libknot.control import KnotCtl, KnotCtlType, KnotCtlError
 except ValueError as e:
     print(str(e))
     sys.exit(1)
