@@ -2,11 +2,11 @@ from colorlog import error
 
 from yangson.instance import InstanceRoute
 from jetconf.helpers import JsonNodeT
-from jetconf.handler_list import STATE_DATA_HANDLES, StateDataContainerHandler, StateDataListHandler
+from jetconf.handler_base import StateDataContainerHandler, StateDataListHandler
 from jetconf.data import BaseDatastore
 
+from . import shared_objs as so
 from .usr_op_handlers import KnotZoneCmd, get_op_container
-from .knot_api import KNOT
 
 
 # ---------- User-defined handlers follow ----------
@@ -15,10 +15,11 @@ class ZoneStateHandler(StateDataListHandler):
     def generate_list(self, node_ii: InstanceRoute, username: str, staging: bool) -> JsonNodeT:
         zones_list = []
 
-        KNOT.knot_connect()
+        so.KNOT.knot_connect()
+
         # Request status of all zones
-        resp = KNOT.zone_status()
-        KNOT.knot_disconnect()
+        resp = so.KNOT.zone_status()
+        so.KNOT.knot_disconnect()
 
         for domain_name, status_data in resp.items():
             try:
@@ -39,10 +40,10 @@ class ZoneStateHandler(StateDataListHandler):
         zone_obj = {}
 
         # Request status of specific zone
-        KNOT.knot_connect()
+        so.KNOT.knot_connect()
         domain_desired = node_ii[2].keys.get(("domain", None))
-        resp = KNOT.zone_status(domain_desired)
-        KNOT.knot_disconnect()
+        resp = so.KNOT.zone_status(domain_desired)
+        so.KNOT.knot_disconnect()
 
         domain_name, status_data = tuple(resp.items())[0]
         try:
@@ -150,24 +151,24 @@ class ZoneDataStateHandler(StateDataListHandler):
 
     def generate_list(self, node_ii: InstanceRoute, username: str, staging: bool):
         # Request contents of all zones
-        KNOT.knot_connect()
+        so.KNOT.knot_connect()
 
         # Get list of zones with zone-status command
-        resp = KNOT.zone_status()
+        resp = so.KNOT.zone_status()
 
         # Read zone contents
         retval = []
         for domain_name in resp.keys():
-            resp_zone = KNOT.zone_read(domain_name)
+            resp_zone = so.KNOT.zone_read(domain_name)
             retval.append(self._transform_zone(domain_name, resp_zone))
 
-        KNOT.knot_disconnect()
+        so.KNOT.knot_disconnect()
 
         return retval
 
     def generate_item(self, node_ii: InstanceRoute, username: str, staging: bool) -> JsonNodeT:
         # Request contents of specific zone
-        KNOT.knot_connect()
+        so.KNOT.knot_connect()
         domain_name = node_ii[1].keys.get(("name", None))
 
         # if domain_name[-1] != ".":
@@ -175,8 +176,8 @@ class ZoneDataStateHandler(StateDataListHandler):
         # else:
         #     domain_name_dot = domain_name
 
-        resp = KNOT.zone_read(domain_name)
-        KNOT.knot_disconnect()
+        resp = so.KNOT.zone_read(domain_name)
+        so.KNOT.knot_disconnect()
 
         zone_data = self._transform_zone(domain_name, resp)
 
@@ -294,6 +295,6 @@ def register_state_handlers(ds: BaseDatastore):
     zsh = ZoneStateHandler(ds, "/dns-server:dns-server-state/zone")
     zdsh = ZoneDataStateHandler(ds, "/dns-zones-state:zone")
     psh = PokusStateHandler(ds, "/dns-server:dns-server/access-control-list/network/pokus")
-    STATE_DATA_HANDLES.register(zsh)
-    STATE_DATA_HANDLES.register(zdsh)
-    STATE_DATA_HANDLES.register(psh)
+    ds.handlers.state.register(zsh)
+    ds.handlers.state.register(zdsh)
+    ds.handlers.state.register(psh)

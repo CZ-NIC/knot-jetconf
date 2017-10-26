@@ -2,35 +2,32 @@ import json
 
 from colorlog import error
 
-from yangson.datamodel import DataModel
 from yangson.instance import NonexistentInstance
-from jetconf.config import CONFIG_KNOT
+
+from jetconf import config
 from jetconf.data import JsonDatastore
 from jetconf.helpers import ErrorHelpers
 
-from .knot_api import KNOT, KnotError, knot_connect, knot_disconnect
+from .knot_api import KnotConfig, KnotError
 
 
 class UserDatastore(JsonDatastore):
-    def __init__(self, dm: DataModel, json_file: str, with_nacm: bool = False):
-        super().__init__(dm, json_file, with_nacm)
-        self.name = "DNS Data"
-
-        # Set datastore commit callbacks
-        self.commit_begin_callback = knot_connect
-        self.commit_end_callback = knot_disconnect
-
-        # Initialize Knot control interface
-        KNOT.set_socket(CONFIG_KNOT["SOCKET"])
-
     def load(self):
         super().load()
 
+        knot = KnotConfig()
+
+        # Initialize Knot control interface
+        try:
+            knot.set_socket(config.CFG.root["KNOT"]["SOCKET"])
+        except KeyError:
+            error("Cannot find KNOT/SOCKET item in jetconf config file")
+
         # Read KnotDNS configuration and save it to the datastore
         try:
-            KNOT.knot_connect()
-            knot_conf_json = KNOT.config_read()
-            KNOT.knot_disconnect()
+            knot.knot_connect()
+            knot_conf_json = knot.config_read()
+            knot.knot_disconnect()
             new_root = self._data.put_member("dns-server:dns-server", knot_conf_json["dns-server:dns-server"], raw=True).top()
             self.set_data_root(new_root)
         except KnotError as e:

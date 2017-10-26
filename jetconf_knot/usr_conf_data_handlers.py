@@ -1,11 +1,13 @@
 from typing import List, Dict, Union, Any
 
 from yangson.instance import InstanceRoute, ObjectValue, EntryKeys
+
 from jetconf.data import BaseDatastore, ChangeType, DataChange
 from jetconf.helpers import ErrorHelpers, LogHelpers
-from jetconf.handler_list import ConfDataObjectHandler, ConfDataListHandler, CONF_DATA_HANDLES
+from jetconf.handler_base import ConfDataObjectHandler, ConfDataListHandler
 
-from .knot_api import KNOT, RRecordBase, SOARecord, ARecord, AAAARecord, NSRecord, MXRecord
+from . import shared_objs as so
+from .knot_api import RRecordBase, SOARecord, ARecord, AAAARecord, NSRecord, MXRecord
 
 JsonNodeT = Union[Dict[str, Any], List]
 epretty = ErrorHelpers.epretty
@@ -23,21 +25,21 @@ class KnotConfServerListener(ConfDataObjectHandler):
         base_ii = ii[0:2]
         base_nv = self.ds.get_data_root().goto(base_ii).value
 
-        KNOT.unset_section(section="server")
+        so.KNOT.unset_section(section="server")
 
-        KNOT.set_item(
+        so.KNOT.set_item(
             section="server",
             identifier=None,
             item="comment",
             value=base_nv.get("description")
         )
-        KNOT.set_item(
+        so.KNOT.set_item(
             section="server",
             identifier=None,
             item="async-start",
             value=base_nv.get("knot-dns:async-start")
         )
-        KNOT.set_item(
+        so.KNOT.set_item(
             section="server",
             identifier=None,
             item="nsid",
@@ -53,38 +55,38 @@ class KnotConfServerListener(ConfDataObjectHandler):
                 ep_str += "@" + str(ep["port"])
             ep_str_list.append(ep_str)
 
-        KNOT.set_item_list(
+        so.KNOT.set_item_list(
             section="server",
             identifier=None,
             item="listen",
             value=ep_str_list
         )
 
-        KNOT.set_item(
+        so.KNOT.set_item(
             section="server",
             identifier=None,
             item="rundir",
             value=base_nv.get("filesystem-paths", {}).get("run-time-dir")
         )
-        KNOT.set_item(
+        so.KNOT.set_item(
             section="server",
             identifier=None,
             item="pidfile",
             value=base_nv.get("filesystem-paths", {}).get("pid-file")
         )
-        KNOT.set_item(
+        so.KNOT.set_item(
             section="server",
             identifier=None,
             item="tcp-workers",
             value=base_nv.get("resources", {}).get("knot-dns:tcp-workers")
         )
-        KNOT.set_item(
+        so.KNOT.set_item(
             section="server",
             identifier=None,
             item="udp-workers",
             value=base_nv.get("resources", {}).get("knot-dns:udp-workers")
         )
-        KNOT.set_item(
+        so.KNOT.set_item(
             section="server",
             identifier=None,
             item="rate-limit-table-size",
@@ -93,7 +95,7 @@ class KnotConfServerListener(ConfDataObjectHandler):
 
     def delete(self, ii: InstanceRoute, ch: DataChange):
         debug_confh(self.__class__.__name__ + " delete triggered")
-        KNOT.unset_section(section="server")
+        so.KNOT.unset_section(section="server")
 
 
 # Config handler for "log" section
@@ -108,22 +110,22 @@ class KnotConfLogListener(ConfDataListHandler):
         base_ii = ii[0:2]
         base_nv = self.ds.get_data_root().goto(base_ii).value
 
-        KNOT.unset_section(section="log")
+        so.KNOT.unset_section(section="log")
 
         for logitem in base_nv:
             tgt = logitem.get("target")
             if tgt is None:
                 continue
 
-            KNOT.set_item(section="log", identifier=None, item="target", value=tgt)
-            KNOT.set_item(section="log", identifier=tgt, item="comment", value=logitem.get("description"))
-            KNOT.set_item(section="log", identifier=tgt, item="server", value=logitem.get("server"))
-            KNOT.set_item(section="log", identifier=tgt, item="zone", value=logitem.get("zone"))
-            KNOT.set_item(section="log", identifier=tgt, item="any", value=logitem.get("any"))
+            so.KNOT.set_item(section="log", identifier=None, item="target", value=tgt)
+            so.KNOT.set_item(section="log", identifier=tgt, item="comment", value=logitem.get("description"))
+            so.KNOT.set_item(section="log", identifier=tgt, item="server", value=logitem.get("server"))
+            so.KNOT.set_item(section="log", identifier=tgt, item="zone", value=logitem.get("zone"))
+            so.KNOT.set_item(section="log", identifier=tgt, item="any", value=logitem.get("any"))
 
     def delete_list(self, ii: InstanceRoute, ch: DataChange):
         debug_confh(self.__class__.__name__ + " delete_list triggered")
-        KNOT.unset_section(section="log")
+        so.KNOT.unset_section(section="log")
 
 
 # Config handler for "zone" section
@@ -134,7 +136,7 @@ class KnotConfZoneListener(ConfDataListHandler):
         # Create new zone
         domain = ch.input_data["dns-server:zone"]["domain"]
         debug_confh("Creating new zone \"{}\"".format(domain))
-        KNOT.zone_new(domain)
+        so.KNOT.zone_new(domain)
 
     def replace_item(self, ii: InstanceRoute, ch: "DataChange"):
         debug_confh(self.__class__.__name__ + " replace triggered")
@@ -145,44 +147,44 @@ class KnotConfZoneListener(ConfDataListHandler):
 
         # Write whole zone config to Knot
         zone_nv = self.ds.get_data_root().goto(ii[0:4]).value
-        KNOT.unset_section(section="zone", identifier=domain)
-        KNOT.set_item(
+        so.KNOT.unset_section(section="zone", identifier=domain)
+        so.KNOT.set_item(
             section="zone",
             identifier=None,
             item="domain",
             value=domain
         )
-        KNOT.set_item(
+        so.KNOT.set_item(
             section="zone",
             identifier=domain,
             item="comment",
             value=zone_nv.get("description")
         )
-        KNOT.set_item(
+        so.KNOT.set_item(
             section="zone",
             identifier=domain,
             item="file",
             value=zone_nv.get("file")
         )
-        KNOT.set_item_list(
+        so.KNOT.set_item_list(
             section="zone",
             identifier=domain,
             item="master",
             value=zone_nv.get("master", [])
         )
-        KNOT.set_item_list(
+        so.KNOT.set_item_list(
             section="zone",
             identifier=domain,
             item="notify",
             value=zone_nv.get("notify", {}).get("recipient", [])
         )
-        KNOT.set_item_list(
+        so.KNOT.set_item_list(
             section="zone",
             identifier=domain,
             item="acl",
             value=zone_nv.get("access-control-list", [])
         )
-        KNOT.set_item(
+        so.KNOT.set_item(
             section="zone",
             identifier=domain,
             item="serial-policy",
@@ -190,25 +192,25 @@ class KnotConfZoneListener(ConfDataListHandler):
         )
 
         anytotcp = zone_nv.get("any-to-tcp")
-        KNOT.set_item(
+        so.KNOT.set_item(
             section="zone",
             identifier=domain,
             item="disable-any",
             value=str(not anytotcp) if isinstance(anytotcp, bool) else None
         )
-        KNOT.set_item(
+        so.KNOT.set_item(
             section="zone",
             identifier=domain,
             item="max-journal-size",
             value=zone_nv.get("journal", {}).get("maximum-journal-size")
         )
-        KNOT.set_item(
+        so.KNOT.set_item(
             section="zone",
             identifier=domain,
             item="zonefile-sync",
             value=zone_nv.get("journal", {}).get("zone-file-sync-delay")
         )
-        KNOT.set_item(
+        so.KNOT.set_item(
             section="zone",
             identifier=domain,
             item="ixfr-from-differences",
@@ -216,13 +218,13 @@ class KnotConfZoneListener(ConfDataListHandler):
         )
 
         qm_list = zone_nv.get("query-module", [])
-        KNOT.set_item_list(
+        so.KNOT.set_item_list(
             section="zone",
             identifier=domain,
             item="module",
             value=list(map(lambda n: n["name"] + "/" + n["type"][0], qm_list))
         )
-        KNOT.set_item(
+        so.KNOT.set_item(
             section="zone",
             identifier=domain,
             item="semantic-checks",
@@ -236,7 +238,7 @@ class KnotConfZoneListener(ConfDataListHandler):
         if (len(ii) == 4) and isinstance(ii[3], EntryKeys) and (ch.change_type == ChangeType.DELETE):
             domain = ii[3].keys[("domain", None)]
             debug_confh("Deleting zone \"{}\"".format(domain))
-            KNOT.zone_remove(domain, False)
+            so.KNOT.zone_remove(domain, False)
 
 
 # Config handler for "control" section
@@ -247,8 +249,8 @@ class KnotConfControlListener(ConfDataObjectHandler):
         base_ii = ii[0:2]
         base_nv = self.ds.get_data_root().goto(base_ii).value
 
-        KNOT.unset_section(section="control")
-        KNOT.set_item(
+        so.KNOT.unset_section(section="control")
+        so.KNOT.set_item(
             section="control",
             identifier=None,
             item="listen",
@@ -257,7 +259,7 @@ class KnotConfControlListener(ConfDataObjectHandler):
 
     def delete(self, ii: InstanceRoute, ch: DataChange):
         debug_confh(self.__class__.__name__ + " delete triggered")
-        KNOT.unset_section(section="control")
+        so.KNOT.unset_section(section="control")
 
 
 # Config handler for "acl" section
@@ -267,25 +269,25 @@ class KnotConfAclListener(ConfDataListHandler):
         name = acl_nv["name"]
         debug_confh("ACL name={}".format(name))
 
-        KNOT.set_item(
+        so.KNOT.set_item(
             section="acl",
             identifier=None,
             item="id",
             value=name
         )
-        KNOT.set_item(
+        so.KNOT.set_item(
             section="acl",
             identifier=name,
             item="comment",
             value=acl_nv.get("description")
         )
-        KNOT.set_item_list(
+        so.KNOT.set_item_list(
             section="acl",
             identifier=name,
             item="key",
             value=acl_nv.get("key", [])
         )
-        KNOT.set_item_list(
+        so.KNOT.set_item_list(
             section="acl",
             identifier=name,
             item="action",
@@ -293,7 +295,7 @@ class KnotConfAclListener(ConfDataListHandler):
         )
 
         netws = acl_nv.get("network", [])
-        KNOT.set_item_list(
+        so.KNOT.set_item_list(
             section="acl",
             identifier=name,
             item="address",
@@ -301,7 +303,7 @@ class KnotConfAclListener(ConfDataListHandler):
         )
 
         action = acl_nv.get("action")
-        KNOT.set_item(
+        so.KNOT.set_item(
             section="acl",
             identifier=name,
             item="deny",
@@ -315,7 +317,7 @@ class KnotConfAclListener(ConfDataListHandler):
         base_nv = self.ds.get_data_root().goto(base_ii).value   # type: ObjectValue
 
         acl_name = base_nv["name"]
-        KNOT.unset_section(section="acl", identifier=acl_name)
+        so.KNOT.unset_section(section="acl", identifier=acl_name)
         self._write_list_item(base_nv)
 
     def replace_list(self, ii: InstanceRoute, ch: DataChange):
@@ -324,13 +326,13 @@ class KnotConfAclListener(ConfDataListHandler):
         base_ii = ii[0:2]
         base_nv = self.ds.get_data_root().goto(base_ii).value
 
-        KNOT.unset_section(section="acl")
+        so.KNOT.unset_section(section="acl")
         for acl_nv in base_nv:
             self._write_list_item(acl_nv)
 
     def delete_list(self, ii: InstanceRoute, ch: DataChange):
         debug_confh(self.__class__.__name__ + " delete triggered")
-        KNOT.unset_section(section="acl")
+        so.KNOT.unset_section(section="acl")
 
 
 class RRHelpers:
@@ -362,9 +364,37 @@ class RRHelpers:
         return new_rr
 
 
+# Connects to Knot control socket and begins a new transaction (config or zone)
+def commit_begin():
+    debug_confh("Connecting to KNOT socket")
+    so.KNOT.knot_connect()
+
+    debug_confh("Starting new KNOT config transaction")
+    so.KNOT.begin()
+
+
+# Commits current Knot internal transaction and disconnects from control socket
+def commit_end(failed: bool=False):
+    so.KNOT.flush_socket()
+
+    if failed:
+        debug_confh("Aborting KNOT transaction")
+        so.KNOT.abort()
+    else:
+        debug_confh("Commiting KNOT transaction")
+        so.KNOT.commit()
+
+    debug_confh("Disonnecting from KNOT socket")
+    so.KNOT.knot_disconnect()
+
+
 def register_conf_handlers(ds: BaseDatastore):
-    CONF_DATA_HANDLES.register(KnotConfServerListener(ds, "/dns-server:dns-server/server-options"))
-    CONF_DATA_HANDLES.register(KnotConfLogListener(ds, "/dns-server:dns-server/knot-dns:log"))
-    CONF_DATA_HANDLES.register(KnotConfZoneListener(ds, "/dns-server:dns-server/zones/zone"))
-    CONF_DATA_HANDLES.register(KnotConfControlListener(ds, "/dns-server:dns-server/knot-dns:control-socket"))
-    CONF_DATA_HANDLES.register(KnotConfAclListener(ds, "/dns-server:dns-server/access-control-list"))
+    ds.handlers.conf.register(KnotConfServerListener(ds, "/dns-server:dns-server/server-options"))
+    ds.handlers.conf.register(KnotConfLogListener(ds, "/dns-server:dns-server/knot-dns:log"))
+    ds.handlers.conf.register(KnotConfZoneListener(ds, "/dns-server:dns-server/zones/zone"))
+    ds.handlers.conf.register(KnotConfControlListener(ds, "/dns-server:dns-server/knot-dns:control-socket"))
+    ds.handlers.conf.register(KnotConfAclListener(ds, "/dns-server:dns-server/access-control-list"))
+
+    # Set datastore commit callbacks
+    ds.handlers.commit_begin = commit_begin
+    ds.handlers.commit_end = commit_end

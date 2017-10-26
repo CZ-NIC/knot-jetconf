@@ -2,11 +2,10 @@ from enum import Enum
 from typing import Dict, List
 from colorlog import error, warning as warn, info
 
+from . import shared_objs as so
 from jetconf.helpers import JsonNodeT
-from jetconf.handler_list import OP_HANDLERS
 from jetconf.data import BaseDatastore
 
-from . import knot_api
 from .knot_api import SOARecord, ARecord, AAAARecord, MXRecord, CNAMERecord
 
 
@@ -41,8 +40,8 @@ class OpHandlersContainer:
             return
 
         # Connect to Knot socket and start zone transaction
-        knot_api.KNOT.knot_connect()
-        knot_api.KNOT.begin_zone()
+        so.KNOT.knot_connect()
+        so.KNOT.begin_zone()
 
         for knot_op in usr_op_journal:
             input_args = knot_op.op_input
@@ -60,28 +59,28 @@ class OpHandlersContainer:
                     rr.retry = rrdata["retry"]
                     rr.expire = rrdata["expire"]
                     rr.minimum = rrdata["minimum"]
-                    knot_api.KNOT.zone_add_record(domain, rr)
+                    so.KNOT.zone_add_record(domain, rr)
                 elif rr_type == "A":
                     rrdata = input_args["dns-zone-rpcs:A"]
                     rr = ARecord(input_args["dns-zone-rpcs:owner"], input_args["dns-zone-rpcs:ttl"])
                     rr.address = rrdata["address"]
-                    knot_api.KNOT.zone_add_record(domain, rr)
+                    so.KNOT.zone_add_record(domain, rr)
                 elif rr_type == "AAAA":
                     rrdata = input_args["dns-zone-rpcs:AAAA"]
                     rr = AAAARecord(input_args["dns-zone-rpcs:owner"], input_args["dns-zone-rpcs:ttl"])
                     rr.address = rrdata["address"]
-                    knot_api.KNOT.zone_add_record(domain, rr)
+                    so.KNOT.zone_add_record(domain, rr)
                 elif rr_type == "MX":
                     rrdata = input_args["dns-zone-rpcs:MX"]
                     rr = MXRecord(input_args["dns-zone-rpcs:owner"], input_args["dns-zone-rpcs:ttl"])
                     rr.preference = rrdata["preference"]
                     rr.exchange = rrdata["exchange"]
-                    knot_api.KNOT.zone_add_record(domain, rr)
+                    so.KNOT.zone_add_record(domain, rr)
                 elif rr_type == "CNAME":
                     rrdata = input_args["dns-zone-rpcs:CNAME"]
                     rr = CNAMERecord(input_args["dns-zone-rpcs:owner"], input_args["dns-zone-rpcs:ttl"])
                     rr.cname = rrdata["cname"]
-                    knot_api.KNOT.zone_add_record(domain, rr)
+                    so.KNOT.zone_add_record(domain, rr)
 
             elif knot_op.cmd == KnotZoneCmd.UNSET:
                 input_args = knot_op.op_input
@@ -116,10 +115,10 @@ class OpHandlersContainer:
                 else:
                     selector = None
 
-                knot_api.KNOT.zone_del_record(domain, owner, rr_type, selector)
+                so.KNOT.zone_del_record(domain, owner, rr_type, selector)
 
-        knot_api.KNOT.commit()
-        knot_api.KNOT.knot_disconnect()
+        so.KNOT.commit()
+        so.KNOT.knot_disconnect()
         del self.op_journal[username]
 
     def zone_abort_transaction(self, input_args: JsonNodeT, username: str) -> JsonNodeT:
@@ -155,9 +154,10 @@ def register_op_handlers(ds: BaseDatastore):
     global OP_HANDLERS_IMPL
     op_handlers_obj = OpHandlersContainer()
     OP_HANDLERS_IMPL = op_handlers_obj
-    OP_HANDLERS.register(op_handlers_obj.zone_begin_transaction, "dns-zone-rpcs:begin-transaction")
-    OP_HANDLERS.register(op_handlers_obj.zone_commit_transaction, "dns-zone-rpcs:commit-transaction")
-    OP_HANDLERS.register(op_handlers_obj.zone_abort_transaction, "dns-zone-rpcs:abort-transaction")
-    OP_HANDLERS.register(op_handlers_obj.zone_set, "dns-zone-rpcs:zone-set")
-    OP_HANDLERS.register(op_handlers_obj.zone_unset, "dns-zone-rpcs:zone-unset")
+
+    ds.handlers.op.register(op_handlers_obj.zone_begin_transaction, "dns-zone-rpcs:begin-transaction")
+    ds.handlers.op.register(op_handlers_obj.zone_commit_transaction, "dns-zone-rpcs:commit-transaction")
+    ds.handlers.op.register(op_handlers_obj.zone_abort_transaction, "dns-zone-rpcs:abort-transaction")
+    ds.handlers.op.register(op_handlers_obj.zone_set, "dns-zone-rpcs:zone-set")
+    ds.handlers.op.register(op_handlers_obj.zone_unset, "dns-zone-rpcs:zone-unset")
 

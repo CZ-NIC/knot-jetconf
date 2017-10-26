@@ -1,5 +1,3 @@
-import sys
-
 from enum import Enum
 from typing import List, Union, Dict, Any, Optional
 from threading import Lock
@@ -7,22 +5,14 @@ from threading import Lock
 from jetconf.helpers import LogHelpers
 from jetconf.errors import BackendError
 
-try:
-    from libknot.control import KnotCtl, KnotCtlType, KnotCtlError
-except ValueError as e:
-    print(str(e))
-    sys.exit(1)
+from libknot.control import KnotCtl, KnotCtlType, KnotCtlError
 
 JsonNodeT = Union[Dict[str, Any], List[Any], str, int]
 debug_knot = LogHelpers.create_module_dbg_logger(__name__)
 
 
 class KnotError(BackendError):
-    def __init__(self, msg=""):
-        self.msg = msg
-
-    def __str__(self):
-        return self.msg
+    pass
 
 
 class KnotApiStateError(KnotError):
@@ -508,40 +498,3 @@ class KnotConfig(KnotCtl):
 
         # print(json.dumps(out_conf_data, indent=4, sort_keys=True))
         return out_conf_data
-
-
-# Connects to Knot control socket and begins a new transaction (config or zone)
-def knot_connect(transaction_opts: Optional[JsonNodeT]) -> bool:
-    debug_knot("Connecting to KNOT socket")
-    KNOT.knot_connect()
-
-    if transaction_opts in ("config", None):
-        debug_knot("Starting new KNOT config transaction")
-        KNOT.begin()
-    elif transaction_opts == "zone":
-        debug_knot("Starting new KNOT zone transaction")
-        KNOT.begin_zone()
-
-    return True
-
-
-# Commits current Knot internal transaction and disconnects from control socket
-def knot_disconnect(transaction_opts: Optional[JsonNodeT], failed: bool=False) -> bool:
-    KNOT.flush_socket()
-
-    if failed:
-        debug_knot("Aborting KNOT transaction")
-        KNOT.abort()
-        retval = True
-    else:
-        debug_knot("Commiting KNOT transaction")
-        KNOT.commit()
-        retval = True
-
-    debug_knot("Disonnecting from KNOT socket")
-    KNOT.knot_disconnect()
-
-    return retval
-
-
-KNOT = KnotConfig()
