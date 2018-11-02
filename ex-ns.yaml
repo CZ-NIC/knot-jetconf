@@ -1,0 +1,10 @@
+# Simple configuration file of fictional ExDNS server
+
+SERVER:
+    BIND: "127.0.0.1"
+    PORT: 53
+
+ZONECFG:
+    - DOMAIN: "example.com"
+      FILE: "/tmp/example.com.zone"
+

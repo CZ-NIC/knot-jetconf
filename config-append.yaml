@@ -1,0 +1,5 @@
+# Append this to Jetconf config file
+# CONFFILE points to ex-ns.yaml example config file
+
+NS:
+    CONFFILE: "/home/pspirek/ex-ns.yaml"

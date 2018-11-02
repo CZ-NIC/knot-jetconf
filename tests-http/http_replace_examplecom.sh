@@ -1,21 +1,8 @@
 #!/bin/bash
 
-# This will rewrite "example.com" zone configuration
-
-# Original:
-# {
-#     "domain": "example.com",
-#     "any-to-tcp": false,
-#     "access-control-list": [
-#         "acl_local"
-#     ]
-# }
+# This will rewrite "example.com" zone configuration using PUT method
 
 CLIENT_CERT="/home/pspirek/sslclient/pavel_curl.pem"
-
-echo "--- conf-start"
-URL="https://127.0.0.1:8443/restconf/operations/jetconf:conf-start"
-curl --http2 -k --cert-type PEM -E $CLIENT_CERT -X POST "$URL"
 
 echo "--- PUT data"
 PUT_DATA="@conf-input-replace-examplecom.json"

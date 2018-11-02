@@ -1,9 +1,6 @@
 {
     "dns-server:zone":{
         "domain":"example.com",
-        "any-to-tcp":false,
-        "access-control-list":[
-            "acl_local"
-        ]
+        "any-to-tcp":false
     }
 }

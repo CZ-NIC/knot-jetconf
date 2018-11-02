@@ -1,3 +1,3 @@
-from .knot_api import KnotConfig
+from .exns_api import NsConfig
 
-KNOT = None  # type: KnotConfig
+NS = None  # type: NsConfig

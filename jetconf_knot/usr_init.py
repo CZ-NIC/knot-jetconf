@@ -3,22 +3,22 @@ from colorlog import error, info
 from jetconf import config
 
 from . import shared_objs as so
-from .knot_api import KnotConfig
+from .exns_api import NsConfig, NsApiError
 
 
 def jc_startup():
     info("Backend: init")
 
     # Create global API objects
-    so.KNOT = KnotConfig()
+    so.NS = NsConfig()
 
     # Initialize Knot control interface
     try:
-        so.KNOT.set_socket(config.CFG.root["KNOT"]["SOCKET"])
+        so.NS.set_cfg_file_path(config.CFG.root["NS"]["CONFFILE"])
     except KeyError:
-        error("Cannot find KNOT/SOCKET item in jetconf config file")
+        error("Cannot find NS config file path in JETCONF's config file")
 
 
 def jc_end():
     info("Backend: cleaning up")
-    so.KNOT = None
+    so.NS = None

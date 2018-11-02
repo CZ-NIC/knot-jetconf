@@ -8,30 +8,28 @@ from jetconf import config
 from jetconf.data import JsonDatastore
 from jetconf.helpers import ErrorHelpers
 
-from .knot_api import KnotConfig, KnotError
+from .exns_api import NsConfig, NsApiError
 
 
 class UserDatastore(JsonDatastore):
     def load(self):
         super().load()
 
-        knot = KnotConfig()
+        exns = NsConfig()
 
         # Initialize Knot control interface
         try:
-            knot.set_socket(config.CFG.root["KNOT"]["SOCKET"])
+            exns.set_cfg_file_path(config.CFG.root["NS"]["CONFFILE"])
         except KeyError:
-            error("Cannot find KNOT/SOCKET item in jetconf config file")
+            error("Cannot find NS config file path in JETCONF's config file")
 
         # Read KnotDNS configuration and save it to the datastore
         try:
-            knot.knot_connect()
-            knot_conf_json = knot.config_read()
-            knot.knot_disconnect()
+            knot_conf_json = exns.config_read()
             new_root = self._data.put_member("dns-server:dns-server", knot_conf_json["dns-server:dns-server"], raw=True).top()
             self.set_data_root(new_root)
-        except KnotError as e:
-            error("Cannot load KnotDNS configuration, reason: {}".format(ErrorHelpers.epretty(e)))
+        except NsApiError as e:
+            error("Cannot load ExDNS configuration, reason: {}".format(ErrorHelpers.epretty(e)))
 
     def save(self):
         # Just need to save NACM data,
