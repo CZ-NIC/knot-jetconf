@@ -1,7 +1,7 @@
 {
 	"dns-zone-rpcs:input": {
 		"zone": "example.com",
-		"owner": "dns2",
+		"owner": "dns1",
 		"type": "iana-dns-parameters:A",
 		"ttl": 3600,
 		"A": {

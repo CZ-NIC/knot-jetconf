@@ -3,11 +3,7 @@
 # Adds new zone "newzone.cz" to KNOT's configuration,
 # then creates SOA record and "192.168.100.200" A record in it.
 
-CLIENT_CERT="/home/pspirek/sslclient/pavel_curl.pem"
-
-echo "--- conf-start"
-URL="https://127.0.0.1:8443/restconf/operations/jetconf:conf-start"
-curl --http2 -k --cert-type PEM -E $CLIENT_CERT -X POST -d "$POST_DATA" "$URL"
+CLIENT_CERT="$HOME/sslclient/alois_curl.pem"
 
 echo "--- POST new zone to configuration"
 POST_DATA='{"dns-server:zone": {"domain": "newzone.cz"}}'
