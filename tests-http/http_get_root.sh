@@ -2,7 +2,7 @@
 
 # This will get the root node of data tree
 
-CLIENT_CERT="$HOME/sslclient/alois_curl.pem"
+CLIENT_CERT="../conf/example-client_curl.pem"
 
 echo "--- GET /restconf/data"
 URL="https://127.0.0.1:8443/restconf/data"

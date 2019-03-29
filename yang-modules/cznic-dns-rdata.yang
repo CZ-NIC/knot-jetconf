@@ -1,0 +1,736 @@
+module cznic-dns-rdata {
+
+  yang-version 1.1;
+
+  namespace "http://www.nic.cz/ns/yang/dns-rdata";
+
+  prefix rdata;
+
+  /* Imports */
+
+  import ietf-inet-types {
+    prefix inet;
+  }
+
+  import ietf-yang-types {
+    prefix yang;
+  }
+
+  import iana-dns-class-rr-type {
+    prefix dnsct;
+  }
+
+  import cznic-dns-parameters {
+    prefix dnspar;
+  }
+
+  /* Metadata */
+
+  organization
+    "CZ.NIC, z. s. p. o.";
+
+  contact
+    "Editor:   Ladislav Lhotka
+               <mailto:lhotka@nic.cz>";
+
+  description
+    "This module contains typedefs and groupings that define the
+     RDATA contents for all DNS resource record types.";
+
+  reference
+    "RFC 1035: Domain Names - Implementation and Specification.";
+
+  revision 2019-03-20 {
+    description
+      "Initial revision.";
+  }
+
+  /* Groupings */
+
+  grouping rrsig {
+    description
+      "RDATA for 'RRSIG' Resource Record.";
+    reference
+      "RFC 4034: Resource Records for the DNS Security Extensions";
+    leaf algorithm {
+      type dnspar:dnssec-algorithm;
+      mandatory "true";
+      description
+        "This field identifies the cryptographic algorithm used to
+         create the signature.";
+    }
+    leaf signature-expiration {
+      type dnspar:utc-date-time;
+      mandatory "true";
+      description
+        "This field specifies the end of a validity period for the
+         signature as UTC date and time. The RRSIG record MUST NOT be
+         used for authentication after the expiration date and
+         time.";
+    }
+    leaf signature-inception {
+      type dnspar:utc-date-time;
+      mandatory "true";
+      description
+        "This field specifies the start of a validity period for the
+         signature as UTC date and time. The RRSIG record MUST NOT be
+         used for authentication prior the inception date and time.
+
+         This date MUST precede the date specified in
+         'signature-expiration'.";
+    }
+    uses key-tag-field;
+    leaf signature {
+      type binary {
+        length "1..max";
+      }
+      mandatory "true";
+      description
+        "This field contains the cryptographic signature that covers
+         the RRSIG RDATA (excluding the Signature field) and the
+         RRset specified by the RRSIG owner name, RRSIG class, and
+         RRSIG Type Covered field.
+
+         The format of this field depends on the algorithm in use.";
+    }
+  }
+
+  grouping key-tag-field {
+    description
+      "This grouping defines the 'key-tag' field that is used in
+       RRSIG and DS resource records.";
+    leaf key-tag {
+      type uint16;
+      mandatory "true";
+      description
+        "The Key Tag field contains the key tag value of the DNSKEY
+         RR that validates this signature, in network byte order.";
+    }
+  }
+
+  grouping rrset-types {
+    description
+      "This grouping defines a sequence of RR types, It is used in
+       NSEC and NSEC3 resource records.";
+    leaf-list rrset-type {
+      type dnsct:rr-type;
+      min-elements "1";
+      description
+        "This leaf-list represents the Type Bit Maps field. Its
+         entries identify the RRset types that exist at the NSEC RR's
+         owner name.";
+    }
+  }
+
+  grouping nsec3-common {
+    description
+      "This grouping defines common field of NSEC3 and NSEC3PARAM
+       resource records.";
+    leaf hash-algorithm {
+      type dnspar:dnssec-nsec3-hash-algorithm;
+      default "SHA-1";
+      description
+        "This field identifies the cryptographic hash algorithm used
+         to construct the hash-value.";
+    }
+    leaf iterations {
+      type uint16;
+      mandatory "true";
+      description
+        "This field defines the number of additional times the hash
+         function has been performed.";
+    }
+    leaf salt {
+      type dnspar:hex-digits {
+        length "0..510";
+      }
+      mandatory "true";
+      description
+        "This field is appended to the original owner name before
+         hashing in order to defend against pre-calculated dictionary
+         attacks.";
+    }
+  }
+
+  grouping soa {
+    description
+      "RDATA content for 'SOA' Resource Record.";
+    reference
+      "RFC 1035: Domain Names - Implementation and Specification.";
+    leaf mname {
+      type inet:domain-name;
+      mandatory "true";
+      description
+        "Name server that was the original or primary source of data
+         for this zone.";
+    }
+    leaf rname {
+      type inet:domain-name;
+      mandatory "true";
+      description
+        "Mailbox of the person responsible for this zone.";
+    }
+    leaf serial {
+      type yang:counter32;
+      mandatory "true";
+      description
+        "Version number of the original copy of the zone.";
+    }
+    leaf refresh {
+      type dnspar:time-interval;
+      mandatory "true";
+      description
+        "Time interval that should elapse before the zone should be
+         refreshed.";
+    }
+    leaf retry {
+      type dnspar:time-interval;
+      mandatory "true";
+      description
+        "Time interval that should elapse before a failed refresh
+         should be retried.";
+    }
+    leaf expire {
+      type dnspar:time-interval;
+      mandatory "true";
+      description
+        "Upper limit on the time interval that can elapse before the
+         zone is no longer authoritative.";
+    }
+    leaf minimum {
+      type dnspar:time-interval;
+      mandatory "true";
+      description
+        "Minimum TTL that should be exported with any RR from this
+         zone.";
+    }
+  }
+
+  grouping a {
+    description
+      "RDATA content for 'A' Resource Record.";
+    reference
+      "RFC 1035: Domain Names - Implementation and Specification.";
+    leaf address {
+      type inet:ipv4-address-no-zone;
+      mandatory "true";
+      description
+        "IPv4 address.";
+    }
+  }
+
+  grouping cname {
+    description
+      "RDATA content for 'CNAME' Resource Record.";
+    reference
+      "RFC 1035: Domain Names - Implementation and Specification.";
+    leaf cname {
+      type inet:domain-name;
+      mandatory "true";
+      description
+        "Canonical or primary name for the owner.";
+    }
+  }
+
+  grouping hinfo {
+    description
+      "RDATA content for 'HINFO' Resource Record.";
+    reference
+      "RFC 1035: Domain Names - Implementation and Specification.";
+    leaf cpu {
+      type dnspar:ascii-string;
+      mandatory "true";
+      description
+        "CPU type.";
+    }
+    leaf os {
+      type dnspar:ascii-string;
+      mandatory "true";
+      description
+        "Operating system type.";
+    }
+  }
+
+  grouping mb {
+    description
+      "RDATA content for 'MB' Resource Record.";
+    reference
+      "RFC 1035: Domain Names - Implementation and Specification.";
+    leaf madname {
+      type inet:domain-name;
+      mandatory "true";
+      description
+        "Host which has the specified mailbox.";
+    }
+  }
+
+  grouping md {
+    status "obsolete";
+    description
+      "RDATA content for 'MD' Resource Record (obsolete, use MX).";
+    reference
+      "RFC 1035: Domain Names - Implementation and Specification.";
+    leaf madname {
+      type inet:domain-name;
+      mandatory "true";
+      description
+        "Host which has a mail agent for the domain which should be
+         able to deliver mail for the domain.";
+    }
+  }
+
+  grouping mf {
+    status "obsolete";
+    description
+      "RDATA content for 'MF' Resource Record (obsolete, use MX).";
+    reference
+      "RFC 1035: Domain Names - Implementation and Specification.";
+    leaf madname {
+      type inet:domain-name;
+      mandatory "true";
+      description
+        "Host which has a mail agent for the domain which will accept
+         mail for forwarding to the domain.";
+    }
+  }
+
+  grouping mg {
+    description
+      "RDATA content for 'MG' Resource Record.";
+    reference
+      "RFC 1035: Domain Names - Implementation and Specification.";
+    leaf mgmname {
+      type inet:domain-name;
+      mandatory "true";
+      description
+        "Mailbox which is a member of the mail group specified by the
+         domain name.";
+    }
+  }
+
+  grouping minfo {
+    description
+      "RDATA content for 'MINFO' Resource Record.";
+    reference
+      "RFC 1035: Domain Names - Implementation and Specification.";
+    leaf rmailbx {
+      type inet:domain-name;
+      mandatory "true";
+      description
+        "Mailbox which is responsible for the mailing list or
+         mailbox.";
+    }
+    leaf emailbx {
+      type inet:domain-name;
+      mandatory "true";
+      description
+        "Mailbox which is to receive error messages related to the
+         mailing list or mailbox specified by the owner of the MINFO
+         RR.";
+    }
+  }
+
+  grouping mr {
+    description
+      "RDATA content for 'MR' Resource Record.";
+    reference
+      "RFC 1035: Domain Names - Implementation and Specification.";
+    leaf newname {
+      type inet:domain-name;
+      mandatory "true";
+      description
+        "Mailbox which is the proper rename of the specified
+         mailbox.";
+    }
+  }
+
+  grouping mx {
+    description
+      "RDATA content for 'MX' Resource Record.";
+    reference
+      "RFC 1035: Domain Names - Implementation and Specification.";
+    leaf preference {
+      type uint16;
+      mandatory "true";
+      description
+        "Preference given to this RR among others at the same owner.
+         Lower values are preferred.";
+    }
+    leaf exchange {
+      type inet:domain-name;
+      mandatory "true";
+      description
+        "Host willing to act as a mail exchange for the owner
+         name.";
+    }
+  }
+
+  grouping ns {
+    description
+      "RDATA content for 'NS' Resource Record.";
+    reference
+      "RFC 1035: Domain Names - Implementation and Specification.";
+    leaf nsdname {
+      type inet:domain-name;
+      mandatory "true";
+      description
+        "Host which should be authoritative for the specified
+         domain.";
+    }
+  }
+
+  grouping null {
+    description
+      "RDATA content for 'NULL' Resource Record.";
+    reference
+      "RFC 1035: Domain Names - Implementation and Specification.";
+    leaf data {
+      type binary {
+        length "0..65535";
+      }
+      mandatory "true";
+      description
+        "Arbitrary data.";
+    }
+  }
+
+  grouping ptr {
+    description
+      "RDATA content for 'PTR' Resource Record.";
+    reference
+      "RFC 1035: Domain Names - Implementation and Specification.";
+    leaf ptrdname {
+      type inet:domain-name;
+      mandatory "true";
+      description
+        "A pointer to some location in the domain name space.";
+    }
+  }
+
+  grouping txt {
+    description
+      "RDATA content for 'TXT' Resource Record.";
+    reference
+      "RFC 1035: Domain Names - Implementation and Specification.";
+    leaf txt-data {
+      type dnspar:ascii-string;
+      mandatory "true";
+      description
+        "Descriptive text whose semantics depends on the domain where
+         it is found.";
+    }
+  }
+
+  grouping wks {
+    description
+      "RDATA content for 'WKS' Resource Record.";
+    reference
+      "RFC 1035: Domain Names - Implementation and Specification.";
+    leaf address {
+      type inet:ipv4-address-no-zone;
+      mandatory "true";
+      description
+        "IPv4 address.";
+    }
+    leaf protocol {
+      type uint8;
+      mandatory "true";
+      description
+        "IP protocol number.";
+    }
+    leaf bitmap {
+      type binary;
+      mandatory "true";
+      description
+        "A variable length bitmap that has one bit per port of the
+         specified protocol.";
+    }
+  }
+
+  grouping aaaa {
+    description
+      "RDATA content for 'AAAA' Resource Record.";
+    reference
+      "RFC 3596: DNS Extensions to Support IP Version 6";
+    leaf address {
+      type inet:ipv6-address-no-zone;
+      mandatory "true";
+      description
+        "IPv6 address.";
+    }
+  }
+
+  grouping dnskey {
+    description
+      "RDATA content for 'DNSKEY' Resource Record.";
+    reference
+      "RFC 4034: Resource Records for the DNS Security Extensions";
+    leaf flags {
+      type dnspar:dnskey-flags;
+      must "contains(., 'ZONE') or not(contains(., 'SEP'))" {
+        error-message
+          "'secure-entry-point' is set but 'zone-key' isn't";
+        description
+          "Secure Entry Point flag needs Zone Key flag.";
+      }
+      description
+        "DNSKEY RR flags.";
+    }
+    leaf protocol {
+      type uint8 {
+        range "3";
+      }
+      default "3";
+      description
+        "Protocol field. It's value MUST be 3.";
+    }
+    leaf algorithm {
+      type dnspar:dnssec-algorithm;
+      mandatory "true";
+      description
+        "This field identifies the public key's cryptographic
+         algorithm and determines the format of the 'public-key'
+         field.";
+    }
+    leaf public-key {
+      type binary {
+        length "1..max";
+      }
+      mandatory "true";
+      description
+        "This field contains public key material. Its format depends
+         on the algorithm.";
+    }
+  }
+
+  grouping nsec {
+    description
+      "RDATA content for 'NSEC' Resource Record.";
+    reference
+      "RFC 4034: Resource Records for the DNS Security Extensions";
+    leaf next-domain-name {
+      type inet:domain-name;
+      mandatory "true";
+      description
+        "This field contains the next owner name (in the canonical
+         ordering of the zone) that has authoritative data or
+         contains a delegation point NS RRset.";
+    }
+    uses rrset-types;
+  }
+
+  grouping ds {
+    description
+      "RDATA content for 'DS' Resource Record.";
+    reference
+      "RFC 4034: Resource Records for the DNS Security Extensions";
+    uses key-tag-field;
+    leaf algorithm {
+      type dnspar:dnssec-algorithm;
+      mandatory "true";
+      description
+        "This field specifies the algorithm of the DNSKEY RR referred
+         to by the DS record.";
+    }
+    leaf digest-type {
+      type dnspar:digest-algorithm;
+      mandatory "true";
+      description
+        "This field identifies the algorithm used to construct the
+         digest of the DNSKEY RR.";
+    }
+    leaf digest {
+      type dnspar:hex-digits {
+        length "1..max";
+      }
+      mandatory "true";
+      description
+        "This field contains a digest of the DNSKEY RR to which the
+         DS RR refers.";
+    }
+  }
+
+  grouping nsec3 {
+    description
+      "RDATA content for 'NSEC3' Resource Record.";
+    reference
+      "RFC 5155: DNS Security (DNSSEC) Hashed Authenticated Denial of
+       Existence";
+    uses nsec3-common;
+    leaf flags {
+      type dnspar:dnssec-nsec3-flags;
+      mandatory "true";
+      description
+        "This field contains flags that indicate different processing
+         of the NSEC3 RR data.";
+    }
+    leaf next-hashed-owner-name {
+      type dnspar:base32hex {
+        length "8..408";
+      }
+      mandatory "true";
+      description
+        "This field contains the next hashed owner name in hash
+         order.";
+    }
+    uses rrset-types;
+  }
+
+  grouping nsec3param {
+    description
+      "RDATA content for 'NSEC3PARAM' Resource Record.";
+    reference
+      "RFC 5155: DNS Security (DNSSEC) Hashed Authenticated Denial of
+       Existence";
+    uses nsec3-common;
+  }
+
+  grouping tlsa {
+    description
+      "RDATA content for 'TLSA' Resource Record.";
+    reference
+      "RFC 6698: The DNS-Based Authentication of Named Entities
+       (DANE) Transport Layer Security (TLS) Protocol: TLSA";
+    leaf certificate-usage {
+      type dnspar:tlsa-certificate-usages;
+      mandatory "true";
+      description
+        "This field specifies the provided association that will be
+         used to match the certificate presented in the TLS
+         handshake.";
+    }
+    leaf selector {
+      type dnspar:tlsa-selectors;
+      mandatory "true";
+      description
+        "This field specifies which part of the TLS certificate
+         presented by the server will be matched against the
+         association data.";
+    }
+    leaf matching-type {
+      type dnspar:tlsa-matching-type;
+      mandatory "true";
+      description
+        "This field specifies how the certificate association is
+         presented.";
+    }
+    leaf certificate-association-data {
+      type dnspar:hex-digits {
+        length "1..max";
+      }
+      mandatory "true";
+      description
+        "This field specifies the \"certificate association data\" to
+         be matched.
+
+         These bytes are either raw data (that is, the full
+         certificate or its SubjectPublicKeyInfo, depending on
+         'selector') for 'matching-type' 0, or the hash of the raw
+         data for 'matching-type' 1 and 2.
+
+         The data refers to the certificate in the association, not
+         to the TLS ASN.1 Certificate object.";
+    }
+  }
+
+  grouping ipseckey {
+    description
+      "RDATA content for 'IPSECKEY' Resource Record.";
+    reference
+      "RFC 4025: A Method for Storing IPsec Keying Material in DNS";
+    leaf precedence {
+      type uint8;
+      mandatory "true";
+      description
+        "Precedence of the resource record.
+
+         Gateways listed in IPSECKEY records with lower precedence
+         are to be attempted first. Where there is a tie in
+         precedence, the order should be non-deterministic.";
+    }
+    leaf gateway-type {
+      type dnspar:ipseckey-gateway-type;
+      mandatory "true";
+      description
+        "This field indicates the format of the information that is
+         stored in the gateway field.";
+    }
+    leaf algorithm {
+      type dnspar:ipseckey-algorithm-type;
+      mandatory "true";
+      description
+        "This field identifies the public key's cryptographic
+         algorithm and determines the format of the 'public-key'
+         field.";
+    }
+    leaf gateway {
+      when "../gateway-type != 'no-gateway'" {
+        description
+          "This field cannot be present if the value of
+           'gateway-type' is 'no-gateway'.";
+      }
+      type inet:host;
+      mandatory "true";
+      description
+        "This field indicates a gateway to which an IPsec tunnel may
+         be created in order to reach the entity named by this
+         resource record.
+
+         The format of this field MUST correspond to the value set in
+         'gateway-type'.";
+    }
+    leaf public-key {
+      when "../algorithm != 'no-key'" {
+        description
+          "This field cannot be present if the value of 'algorithm'
+           is 'no-key'.";
+      }
+      type binary;
+      mandatory "true";
+      description
+        "This field contains the IPSec public key in a format
+         corresponding to the value of 'algorithm'.";
+    }
+  }
+
+  grouping dname {
+    description
+      "RDATA content for 'DNAME' Resource Record.";
+    reference
+      "RFC 2672: Non-Terminal DNS Name Redirection";
+    leaf target {
+      type inet:domain-name;
+      mandatory "true";
+      description
+        "Target domain name that is substituted for 'owner' as a
+         suffix of a domain name.";
+    }
+  }
+
+  grouping sshfp {
+    description
+      "RDATA content for 'SSHFP' Resource Record.";
+    reference
+      "RFC 4255: Using DNS to Securely Publish Secure Shell (SSH) Key
+       Fingerprints";
+    leaf algorithm {
+      type dnspar:sshfp-algorithm-type;
+      mandatory "true";
+      description
+        "This field specifies the algorithm of the public key.";
+    }
+    leaf fingerprint-type {
+      type dnspar:sshfp-fingerprint-type;
+      mandatory "true";
+      description
+        "This field specifies the message-digest algorithm used to
+         calculate teh fingerprint of the public key.";
+    }
+    leaf fingerprint {
+      type dnspar:hex-digits;
+      mandatory "true";
+      description
+        "Fingerprint of the public key.";
+    }
+  }
+}

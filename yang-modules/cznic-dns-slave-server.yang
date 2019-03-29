@@ -1,0 +1,203 @@
+module cznic-dns-slave-server {
+
+  yang-version 1.1;
+
+  namespace "http://www.nic.cz/ns/yang/dns-slave-server";
+
+  prefix dnsss;
+
+  import ietf-inet-types {
+    prefix inet;
+  }
+
+  organization
+    "CZ.NIC, z. s. p. o.";
+
+  contact
+    "Editor:   Ladislav Lhotka
+               <mailto:lhotka@nic.cz>";
+
+  description
+    "This YANG module defines the minimum data model for an
+     authoritative *slave* DNS server.
+
+     It is primarily intended for demonstrating simultaneous
+     configuration of multiple slave servers (different
+     implementations).";
+
+  revision 2019-03-24 {
+    description
+      "Initial revision.";
+  }
+
+  /* Typedefs */
+
+  typedef server-role {
+    type enumeration {
+      enum master {
+        description
+          "Master for the zone.";
+      }
+      enum slave {
+        description
+          "Slave for the zone.";
+      }
+    }
+    default "master";
+    description
+      "Enumeration of roles that the DNS server can play for a given
+       zone.";
+  }
+
+  typedef remote-ref {
+    type leafref {
+      path "/dns-server/remote-server/name";
+    }
+    description
+      "This type is used for referring to a configured remote
+       server.";
+  }
+
+  typedef zone-ref {
+    type leafref {
+      path "/dns-server/zones/zone/domain";
+    }
+    description
+      "This type is used for referring to a configured zone.";
+  }
+
+  /* Groupings */
+
+  grouping endpoint-address {
+    description
+      "This grouping defines a TCP/IP endpoint address, i.e., the
+       combination of an IP address and port number.";
+    leaf ip-address {
+      type inet:ip-address;
+      mandatory "true";
+      description
+        "IPv4/IPv6 address.";
+    }
+    leaf port {
+      type inet:port-number;
+      description
+        "Port number.";
+    }
+  }
+
+  grouping entry-name {
+    description
+      "This grouping defines a leaf that is intended for use as a
+       list key.";
+    leaf name {
+      type string;
+      description
+        "Name of a list entry.";
+    }
+  }
+
+  grouping description {
+    description
+      "This grouping defines 'description' leaf that can be added to
+       various objects.";
+    leaf description {
+      type string;
+      description
+        "Textual description of an object.";
+    }
+  }
+
+  /* Configuration data */
+
+  container dns-server {
+    description
+      "Configuration of a DNS server.";
+    uses description;
+    list remote-server {
+      key "name";
+      description
+        "Definitions of remote servers.";
+      uses entry-name;
+      uses description;
+      container remote {
+        description
+          "Parameters of the remote server.";
+        uses endpoint-address {
+          refine "port" {
+            default "53";
+          }
+        }
+      }
+    }
+    container zones {
+      description
+        "Configuration of zones.";
+      grouping zone-options {
+        description
+          "This grouping defines zone options that are used both in
+           the configuration of zones and templates.";
+        uses description;
+        leaf role {
+          type server-role;
+          must ". = 'slave'";
+          description
+            "Server role for the zone.";
+        }
+        leaf-list master {
+          type remote-ref;
+          description
+            "List of references to master servers for the zone from
+             which the local server receives zone data via
+             AXFR/IXFR.";
+        }
+        container notify {
+          description
+            "Configuration of NOTIFY messages.";
+          reference
+            "RFC 1996: A Mechanism for Prompt Notification of Zone
+             Changes (DNS NOTIFY).";
+          leaf-list recipient {
+            type remote-ref;
+            description
+              "List of references to NOTIFY recipients.";
+          }
+        }
+      }
+      list zone {
+        key "domain";
+        description
+          "List of zones.";
+        leaf domain {
+          type inet:domain-name;
+          description
+            "Zone name.";
+        }
+        uses zone-options;
+      }
+    }
+  }
+
+  /* Operations */
+
+  rpc start-server {
+    description
+      "Start the DNS server, or do nothing if it is already
+       running.";
+  }
+
+  rpc stop-server {
+    description
+      "Stop the DNS server, or do nothing if it is not running.";
+  }
+
+  rpc restart-server {
+    description
+      "Restart the DNS server, which is equivalent to executing
+       'stop-server' and 'start-server' in sequence.";
+  }
+
+  rpc reload-server {
+    description
+      "Reload server configuration.";
+  }
+}

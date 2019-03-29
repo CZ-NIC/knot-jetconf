@@ -6,6 +6,7 @@ from jetconf.helpers import LogHelpers
 from jetconf.errors import BackendError
 
 from libknot.control import KnotCtl, KnotCtlType, KnotCtlError
+import subprocess
 
 JsonNodeT = Union[Dict[str, Any], List[Any], str, int]
 debug_knot = LogHelpers.create_module_dbg_logger(__name__)
@@ -34,7 +35,7 @@ class KnotConfState(Enum):
 
 
 class RRecordBase:
-    def __init__(self, owner: str, res_type: str, ttl: Optional[int]=None):
+    def __init__(self, owner: str, res_type: str, ttl: Optional[int] = None):
         self.owner = owner or "@"
         self.type = res_type
         self.ttl = ttl
@@ -50,13 +51,13 @@ class RRecordBase:
 class SOARecord(RRecordBase):
     def __init__(self):
         super().__init__("@", "SOA")
-        self.mname = None       # type: str
-        self.rname = None       # type: str
-        self.serial = None      # type: str
-        self.refresh = None     # type: str
-        self.retry = None       # type: str
-        self.expire = None      # type: str
-        self.minimum = None     # type: str
+        self.mname = None  # type: str
+        self.rname = None  # type: str
+        self.serial = None  # type: str
+        self.refresh = None  # type: str
+        self.retry = None  # type: str
+        self.expire = None  # type: str
+        self.minimum = None  # type: str
 
     def rrdata_format(self) -> str:
         return "{} {} {} {} {} {} {}".format(
@@ -65,52 +66,88 @@ class SOARecord(RRecordBase):
 
 
 class CNAMERecord(RRecordBase):
-    def __init__(self, owner: str, ttl: Optional[int]=None):
+    def __init__(self, owner: str, ttl: Optional[int] = None):
         super().__init__(owner, "CNAME", ttl)
-        self.cname = None       # type: str
+        self.cname = None  # type: str
 
     def rrdata_format(self) -> str:
         return self.cname
 
 
 class NSRecord(RRecordBase):
-    def __init__(self, owner: str, ttl: Optional[int]=None):
+    def __init__(self, owner: str, ttl: Optional[int] = None):
         super().__init__(owner, "NS", ttl)
-        self.nsdname = None     # type: str
+        self.nsdname = None  # type: str
 
     def rrdata_format(self) -> str:
         return self.nsdname
 
 
 class ARecord(RRecordBase):
-    def __init__(self, owner: str, ttl: Optional[int]=None):
+    def __init__(self, owner: str, ttl: Optional[int] = None):
         super().__init__(owner, "A", ttl)
-        self.address = None     # type: str
+        self.address = None  # type: str
 
     def rrdata_format(self) -> str:
         return self.address
 
 
 class AAAARecord(RRecordBase):
-    def __init__(self, owner: str, ttl: Optional[int]=None):
+    def __init__(self, owner: str, ttl: Optional[int] = None):
         super().__init__(owner, "AAAA", ttl)
-        self.address = None     # type: str
+        self.address = None  # type: str
 
     def rrdata_format(self) -> str:
         return self.address
 
 
 class MXRecord(RRecordBase):
-    def __init__(self, owner: str, ttl: Optional[int]=None):
+    def __init__(self, owner: str, ttl: Optional[int] = None):
         super().__init__(owner, "MX", ttl)
         self.preference = None  # type: str
-        self.exchange = None    # type: str
+        self.exchange = None  # type: str
 
     def rrdata_format(self) -> str:
         return self.exchange
 
 
 class KnotConfig(KnotCtl):
+
+    def systemd_knot(self, command: str, password: str = None):
+        # cmd = "echo '{0}' | sudo - S systemctl {1} knot".format(password, command)
+        cmd = "sudo systemctl {0} knot".format(command)
+
+        # return subprocess.check_output([cmd], timeout=10)
+        return subprocess.check_output(["sudo", "systemctl", command, "knot"], timeout=10)
+
+    def restart(self, passwd: str = None):
+        try:
+            resp = self.systemd_knot("restart", passwd)
+        except subprocess.TimeoutExpired as te:
+            resp = str(te)
+        return resp
+
+    def start(self, passwd: str = None):
+        try:
+            resp = self.systemd_knot("start", passwd)
+        except subprocess.TimeoutExpired as te:
+            resp = str(te)
+        return resp
+
+    def stop(self, passwd: str = None):
+        try:
+            resp = self.systemd_knot("stop", passwd)
+        except subprocess.TimeoutExpired as te:
+            resp = str(te)
+        return resp
+
+    def reload(self, passwd: str = None):
+        try:
+            resp = self.systemd_knot("reload", passwd)
+        except subprocess.TimeoutExpired as te:
+            resp = str(te)
+        return resp
+
     def __init__(self):
         super().__init__()
         self.sock_path = ""
@@ -195,7 +232,7 @@ class KnotConfig(KnotCtl):
             raise KnotInternalError(str(e))
 
     # Deletes a whole section from Knot configuration
-    def unset_section(self, section: str, identifier: str=None) -> JsonNodeT:
+    def unset_section(self, section: str, identifier: str = None) -> JsonNodeT:
         if not self.connected:
             raise KnotApiError("Knot socket is closed")
 
@@ -228,7 +265,7 @@ class KnotConfig(KnotCtl):
 
         return resp
 
-    def unset_item(self, section: str, identifier: Optional[str], item: str, zone: str=None) -> JsonNodeT:
+    def unset_item(self, section: str, identifier: Optional[str], item: str, zone: str = None) -> JsonNodeT:
         if not self.connected:
             raise KnotApiError("Knot socket is closed")
 
@@ -256,7 +293,7 @@ class KnotConfig(KnotCtl):
         return resp_list
 
     # Returns a status data of all or one specific DNS zone
-    def zone_status(self, domain_name: str=None) -> JsonNodeT:
+    def zone_status(self, domain_name: str = None) -> JsonNodeT:
         if not self.connected:
             raise KnotApiError("Knot socket is closed")
 
@@ -312,7 +349,7 @@ class KnotConfig(KnotCtl):
     # Removes a resource record from DNS zone
     # If the zone contains two or more records with the same owner and type, selector parameter can specify
     # which one to remove. Usually it is the same as record data.
-    def zone_del_record(self, domain_name: str, owner: str, rr_type: str, selector: str=None) -> JsonNodeT:
+    def zone_del_record(self, domain_name: str, owner: str, rr_type: str, selector: str = None) -> JsonNodeT:
         if not self.connected:
             raise KnotApiError("Knot socket is closed")
 
@@ -339,6 +376,82 @@ class KnotConfig(KnotCtl):
 
         return resp[domain_name]
 
+    def config_set(self, config: JsonNodeT):
+        if not self.connected:
+            raise KnotApiError("Knot socket is closed")
+
+        conf = config['cznic-dns-slave-server:dns-server']
+
+        # set remote server configuration
+        self.unset_section(section="remote")
+        for rem_server in conf['remote-server']:
+
+            name = rem_server.get("name")
+            # set remote-server
+            self.set_item(
+                section="remote",
+                identifier=None,
+                item="id",
+                value=name
+            )
+
+            # set description
+            if 'description' in rem_server:
+                self.set_item(
+                    section="remote",
+                    identifier=name,
+                    item="comment",
+                    value=rem_server.get("description")
+                )
+
+            address = rem_server.get("remote", {}).get("ip-address") + "@" + str(rem_server.get("remote", {}).get("port"))
+
+            # set address
+            self.set_item_list(
+                section="remote",
+                identifier=name,
+                item="address",
+                value=[address]
+            )
+
+        # set zone configuration
+        self.unset_section(section="zone")
+        for zone in conf['zones']['zone']:
+            domain = zone.get("domain")
+
+            # set domain
+            self.set_item(
+                section="zone",
+                identifier=None,
+                item="domain",
+                value=domain
+            )
+
+            # set description
+            if 'description' in zone:
+                self.set_item(
+                    section="zone",
+                    identifier=domain,
+                    item="comment",
+                    value=zone.get("description")
+                )
+
+            # set master
+            self.set_item_list(
+                section="zone",
+                identifier=domain,
+                item="master",
+                value=zone.get("master", [])
+            )
+
+            # set notify
+            self.set_item_list(
+                section="zone",
+                identifier=domain,
+                item="notify",
+                value=zone.get("notify", {}).get("recipient", [])
+            )
+
     # Reads all configuration data and converts them to YANG model compliant data tree
     def config_read(self) -> JsonNodeT:
         if not self.connected:
@@ -350,151 +463,42 @@ class KnotConfig(KnotCtl):
         except KnotCtlError as e:
             raise KnotInternalError(str(e))
 
-        out_conf_dnss = {}
+        remote_servers_dict = []
+        if 'remote' in resp:
 
-        out_conf_data = {
-            "dns-server:dns-server": out_conf_dnss
-        }
+            for remote in resp['remote']:
+                remote_dict = {"name": remote}
+                if 'address' in resp['remote'][remote]:
+                    if '@' in resp['remote'][remote]['address'][0]:
+                        addr, port = resp['remote'][remote]['address'][0].split('@')
 
-        out_conf_dnss["description"] = "Configuration acquired from KnotDNS control socket"
+                        if int(port) == 53:
+                            remote_dict['remote'] = {"ip-address": addr}
+                        else:
+                            remote_dict['remote'] = {"ip-address": addr,
+                                                     "port": int(port)}
+                    else:
+                        remote_dict['remote'] = {"ip-address": resp['remote'][remote]['address'][0]}
+                    remote_servers_dict.append(remote_dict.copy())
 
-        # "server" section
-        server_in = resp.get("server")
-        if server_in is not None:
-            server_out = {}
+        zones_dict = []
+        if 'zone' in resp:
 
-            server_listen_in = server_in.get("listen")
-            if server_listen_in is not None:
-                server_ep_list = []
-                ep_name = 1
+            for zone in resp['zone']:
+                zone_dict = {'domain': zone}
 
-                for ep in server_listen_in:
-                    ep_splitted = ep.split("@")
-                    listen_ep = {
-                        "name": str(ep_name),
-                        "ip-address": ep_splitted[0],
-                        "port": int(ep_splitted[1])
-                    }
-                    ep_name += 1
-                    server_ep_list.append(listen_ep)
-                server_out["listen-endpoint"] = server_ep_list
+                if 'master' in resp['zone'][zone]:
+                    zone_dict['master'] = resp['zone'][zone]['master']
+                if 'notify' in resp['zone'][zone]:
+                    zone_dict['notify'] = {"recipient": resp['zone'][zone]['notify']}
 
-            server_rundir_in = server_in.get("rundir")
-            if (server_rundir_in is not None) and (len(server_rundir_in) >= 1):
-                server_out["filesystem-paths"] = {
-                    "run-time-dir": server_rundir_in[0]
-                }
+                zones_dict.append(zone_dict.copy())
 
-            out_conf_dnss["server-options"] = server_out
+        conf_data = {"remote-server": [], "zones": {"zone": []}}
 
-        # "log" section
-        log_in = resp.get("log")
-        if log_in is not None:
-            log_out = []
+        if remote_servers_dict:
+            conf_data['remote-server'] = remote_servers_dict
+        if zones_dict:
+            conf_data['zones']['zone'] = zones_dict
 
-            for tgt, rel_dict in log_in.items():
-                log_item_out = {
-                    "target": tgt
-                }
-                for rel, val in rel_dict.items():
-                    log_item_out[rel] = val[0]
-                log_out.append(log_item_out)
-
-            out_conf_dnss["knot-dns:log"] = log_out
-
-        # "acl" section
-        acl_in = resp.get("acl")
-        if acl_in is not None:
-            acl_out = []
-
-            for acl_name, acl_dict in acl_in.items():
-                acl_item_out = {
-                    "name": acl_name,
-                    "operation": acl_dict["action"]
-                }
-
-                acl_item_nw_out = []
-                nw_name = 1
-                for nw_adr in acl_dict["address"]:
-                    acl_item_nw_item_out = {
-                        "name": str(nw_name),
-                        "ip-prefix": nw_adr + "/32"
-                    }
-                    acl_item_nw_out.append(acl_item_nw_item_out)
-
-                acl_item_out["network"] = acl_item_nw_out
-                acl_out.append(acl_item_out)
-
-            out_conf_dnss["access-control-list"] = acl_out
-
-        # "template" section
-        template_in = resp.get("template")
-        if template_in is not None:
-            template_out = []
-
-            for template_name, template_dict in template_in.items():
-                template_item_out = {
-                    "name": template_name
-                }
-
-                try:
-                    semantic_checks_str = template_dict["semantic-checks"][0]  # values: "on", "off"
-                    semantic_checks_bool = {"on": True, "off": False}[semantic_checks_str]
-                    template_item_out["knot-dns:semantic-checks"] = semantic_checks_bool
-                except (KeyError, IndexError, ValueError):
-                    pass
-
-                try:
-                    storage = template_dict["storage"][0]
-                    template_item_out["zones-dir"] = storage
-                except (KeyError, IndexError):
-                    pass
-
-                try:
-                    zonefile_sync = template_dict["zonefile-sync"][0]
-                    template_item_out["journal"] = {
-                        "zone-file-sync-delay": int(zonefile_sync)
-                    }
-                except (KeyError, IndexError, ValueError):
-                    pass
-
-                template_out.append(template_item_out)
-
-            out_conf_dnss["zones"] = {
-                "template": template_out
-            }
-
-        # "zone" section
-        zone_in = resp.get("zone")
-        if zone_in is not None:
-            zone_out = []
-
-            for domain, zone_dict in zone_in.items():
-                zone_item_out = {
-                    "domain": domain.rstrip(".")
-                }
-
-                try:
-                    zonefile = zone_dict["file"][0]
-                    zone_item_out["file"] = zonefile
-                except (KeyError, IndexError):
-                    pass
-
-                try:
-                    zone_acl = zone_dict["acl"]
-                    zone_item_out["access-control-list"] = zone_acl
-                except KeyError:
-                    pass
-
-                zone_out.append(zone_item_out)
-
-            try:
-                out_conf_dnss_zone = out_conf_dnss["zone"]
-                out_conf_dnss_zone["zone"] = zone_out
-            except KeyError:
-                out_conf_dnss["zones"] = {
-                    "zone": zone_out
-                }
-
-        # print(json.dumps(out_conf_data, indent=4, sort_keys=True))
-        return out_conf_data
+        return {"cznic-dns-slave-server:dns-server": conf_data}
