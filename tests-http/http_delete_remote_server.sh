@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# This will delete zone "." from KNOT's configuration
+# This will delete remote-server "exrec" from KNOT's configuration
 
 CLIENT_CERT="../conf/example-client_curl.pem"
 
-echo "--- DEL newzone.cz from config"
-URL="https://localhost:8443/restconf/data/cznic-dns-slave-server:dns-server/zones/zone=."
+echo "--- DEL exrec from config"
+URL="https://localhost:8443/restconf/data/cznic-dns-slave-server:dns-server/remote-server=exrec"
 curl --http2 -k --cert-type PEM -E $CLIENT_CERT -X DELETE "$URL"
 
 echo "--- conf-commit"

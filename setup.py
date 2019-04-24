@@ -7,18 +7,18 @@ with codecs.open(os.path.join(here, 'README.md'), encoding='utf-8') as readme:
     long_description = readme.read()
 
 setup(
-    name = "jetconf_knot",
-    packages = find_packages(),
-    use_scm_version = True,
+    name="jetconf_knot",
+    packages=find_packages(),
+    use_scm_version=True,
     setup_requires=["setuptools_scm"],
-    description = "KnotDNS JetConf backend",
-    long_description = long_description,
-    url = "https://gitlab.labs.nic.cz/labs/jetconf-knot",
-    author = "Pavel Spirek",
-    author_email = "pavel.spirek@nic.cz",
-    install_requires = ["jetconf", "libknot"],
-    keywords = ["RESTCONF", "yang", "data model", "Jetconf"],
-    classifiers = [
+    description="KnotDNS JetConf backend for common DNS configuration YANG data model",
+    long_description=long_description,
+    url="https://gitlab.labs.nic.cz/labs/jetconf-knot",
+    author="Pavel Spirek",
+    author_email="pavel.spirek@nic.cz",
+    install_requires=["jetconf", "libknot"],
+    keywords=["DNS", "RESTCONF", "YANG", "data model", "Jetconf"],
+    classifiers=[
         "Programming Language :: Python",
         "Programming Language :: Python :: 3.5",
         "Development Status :: 3 - Alpha",
@@ -29,7 +29,7 @@ setup(
         "Topic :: System :: Monitoring",
         "Topic :: System :: Systems Administration"
     ],
-    package_data = {
+    package_data={
         "": ["yang-library-data.json"]
     }
 )

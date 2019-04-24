@@ -14,17 +14,19 @@ class UserDatastore(JsonDatastore):
         super().load()
 
         so.KNOT = KnotConfig()
-        load_data = False
+        # config.CFG.root['KNOT'] = {
+        #     'LOAD_CONF': False,
+        #     'SOCKET': '/run/knot/knot.sock'}
+        #
+
 
         # Initialize Knot control interface
         try:
-            so.KNOT.set_socket(config.CFG.root["KNOT"]["SOCKET"])
-            load_data = config.CFG.root['KNOT']['LOAD_CONF']
+            so.KNOT.set_socket(config.CFG.root['KNOT']['SOCKET'])
         except KeyError as ke:
             error("Cannot set KNOT configuration from configuration YAML file, KeyError: {}".format(ke))
-            so.KNOT.set_socket('/run/knot/knot.sock')
 
-        if load_data:
+        if config.CFG.root['KNOT']['LOAD_CONF']:
             # Read KnotDNS configuration and save it to the datastore
             info("Loading configuration from KnotDNS")
             try:

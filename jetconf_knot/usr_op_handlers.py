@@ -15,7 +15,7 @@ class OpHandlersContainer:
     def reload_server_op(self, input_args: JsonNodeT, username: str) -> JsonNodeT:
         debug_oph(self.__class__.__name__ +
                   " reload server rpc triggered, user: {}".format(username))
-        res = so.KNOT.reload().decode("utf-8")
+        res = so.KNOT.systemd_knot("reload")
         if res is "":
             info("KnotDNS has been reloaded")
         else:
@@ -24,7 +24,7 @@ class OpHandlersContainer:
     def restart_server_op(self, input_args: JsonNodeT, username: str) -> JsonNodeT:
         debug_oph(self.__class__.__name__ +
                   " restart server rpc triggered, user: {}".format(username))
-        res = so.KNOT.restart().decode("utf-8")
+        res = so.KNOT.systemd_knot("restart")
         if res is "":
             info("KnotDNS has been restarted")
         else:
@@ -33,7 +33,7 @@ class OpHandlersContainer:
     def start_server_op(self, input_args: JsonNodeT, username: str) -> JsonNodeT:
         debug_oph(self.__class__.__name__ +
                   " start server rpc triggered, user: {}".format(username))
-        res = so.KNOT.start().decode("utf-8")
+        res = so.KNOT.systemd_knot("start")
         if res is "":
             info("KnotDNS has been started")
         else:
@@ -42,9 +42,9 @@ class OpHandlersContainer:
     def stop_server_op(self, input_args: JsonNodeT, username: str) -> JsonNodeT:
         debug_oph(self.__class__.__name__ +
                   " stop server rpc triggered, user: {}".format(username))
-        res = so.KNOT.stop().decode("utf-8")
+        res = so.KNOT.systemd_knot("stop")
         if res is "":
-            info("KnotDNS was stopped")
+            info("KnotDNS has been stopped")
         else:
             error("KnotDNS stop failed, reason: {}".format(res))
 

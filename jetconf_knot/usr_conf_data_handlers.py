@@ -13,7 +13,15 @@ debug_confh = LogHelpers.create_module_dbg_logger(__name__)
 class RemoteHandler(ConfDataListHandler):
 
     def create_item(self, ii: InstanceRoute, ch: DataChange):
+        # TODO: not working
+
         debug_confh(self.__class__.__name__ + " create item triggered")
+
+        # Create new remote-server
+        name = ch.input_data["cznic-dns-slave-server:remote-server"]["name"]
+        debug_confh("Creating new remote-server \"{}\"".format(name))
+
+        so.KNOT.remote_server_new(name)
 
     def create_list(self, ii: InstanceRoute, ch: DataChange):
         debug_confh(self.__class__.__name__ + " create list triggered")
@@ -21,13 +29,14 @@ class RemoteHandler(ConfDataListHandler):
     def replace_item(self, ii: InstanceRoute, ch: DataChange):
         debug_confh(self.__class__.__name__ + " replace item triggered")
 
-        # Edit particular zone
+        # Edit particular remote-server
         name = ii[2].keys[("name", None)]
         debug_confh("Editing config of remote-server \"{}\"".format(name))
 
-        # Write whole zone config to Knot
-        zone_nv = self.ds.get_data_root().add_defaults().goto(ii[0:3]).value
-        # clear zone
+        # Write whole remote-server config to Knot
+        remote_nv = self.ds.get_data_root().add_defaults().goto(ii[0:3]).value
+
+        # clear remote-server
         so.KNOT.unset_section(section="remote", identifier=name)
 
         # set remote-server
@@ -38,16 +47,23 @@ class RemoteHandler(ConfDataListHandler):
             value=name
         )
 
-        address = zone_nv.get("remote", {}).get("ip-address") + "@" + str(zone_nv.get("remote", {}).get("port"))
+        # set description
+        if 'description' in remote_nv:
+            so.KNOT.set_item(
+                section="remote",
+                identifier=name,
+                item="comment",
+                value=remote_nv.get("description")
+            )
 
-        print(address)
+        address = remote_nv.get("remote", {}).get("ip-address") + "@" + str(remote_nv.get("remote", {}).get("port"))
 
         # set address
         so.KNOT.set_item_list(
             section="remote",
             identifier=name,
             item="address",
-            value=address
+            value=[address]
         )
 
     def replace_list(self, ii: InstanceRoute, ch: DataChange):
@@ -59,8 +75,8 @@ class RemoteHandler(ConfDataListHandler):
         # Delete zone
         if (len(ii) == 4) and isinstance(ii[3], EntryKeys) and (ch.change_type == ChangeType.DELETE):
             name = ii[2].keys[("name", None)]
-            debug_confh("Deleting remoteserver \"{}\"".format(name))
-            #so.KNOT.remote_server_remove(name, False)
+            debug_confh("Deleting remote-server \"{}\"".format(name))
+            so.KNOT.remote_server_remove(name, False)
 
     def delete_list(self, ii: InstanceRoute, ch: DataChange):
         debug_confh(self.__class__.__name__ + " delete list triggered")
@@ -69,7 +85,14 @@ class RemoteHandler(ConfDataListHandler):
 class KnotZoneHandler(ConfDataListHandler):
 
     def create_item(self, ii: InstanceRoute, ch: DataChange):
+        # TODO: not working
         debug_confh(self.__class__.__name__ + " create item triggered")
+
+        # Create new zone
+        domain = ch.input_data["cznic-dns-slave-server:zone"]["domain"]
+        debug_confh("Creating new zone \"{}\"".format(domain))
+
+        so.KNOT.zone_new(domain)
 
     def create_list(self, ii: InstanceRoute, ch: DataChange):
         debug_confh(self.__class__.__name__ + " create list triggered")
@@ -78,7 +101,7 @@ class KnotZoneHandler(ConfDataListHandler):
         debug_confh(self.__class__.__name__ + " replace item triggered")
 
         # Edit particular zone
-        domain = ii[3].keys[("name", None)]
+        domain = ii[3].keys[("domain", None)]
         debug_confh("Editing config of zone \"{}\"".format(domain))
 
         # Write whole zone config to Knot
@@ -117,14 +140,6 @@ class KnotZoneHandler(ConfDataListHandler):
             item="notify",
             value=zone_nv.get("notify", {}).get("recipient", [])
         )
-
-        # # set role
-        # so.KNOT.set_item_list(
-        #     section="zone",
-        #     identifier=domain,
-        #     item="notify",
-        #     value=zone_nv.get()
-        # )
 
     def replace_list(self, ii: InstanceRoute, ch: DataChange):
         debug_confh(self.__class__.__name__ + " replace list triggered")

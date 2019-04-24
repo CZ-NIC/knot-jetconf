@@ -34,119 +34,46 @@ class KnotConfState(Enum):
     ZONE = 2
 
 
-class RRecordBase:
-    def __init__(self, owner: str, res_type: str, ttl: Optional[int] = None):
-        self.owner = owner or "@"
-        self.type = res_type
-        self.ttl = ttl
-
-    def rrdata_format(self) -> str:
-        raise NotImplementedError("Not implemented in base class")
-
-    @property
-    def ttl_str(self) -> Optional[str]:
-        return str(self.ttl) if self.ttl is not None else None
-
-
-class SOARecord(RRecordBase):
-    def __init__(self):
-        super().__init__("@", "SOA")
-        self.mname = None  # type: str
-        self.rname = None  # type: str
-        self.serial = None  # type: str
-        self.refresh = None  # type: str
-        self.retry = None  # type: str
-        self.expire = None  # type: str
-        self.minimum = None  # type: str
-
-    def rrdata_format(self) -> str:
-        return "{} {} {} {} {} {} {}".format(
-            self.mname, self.rname, self.serial, self.refresh, self.retry, self.expire, self.minimum
-        )
-
-
-class CNAMERecord(RRecordBase):
-    def __init__(self, owner: str, ttl: Optional[int] = None):
-        super().__init__(owner, "CNAME", ttl)
-        self.cname = None  # type: str
-
-    def rrdata_format(self) -> str:
-        return self.cname
-
-
-class NSRecord(RRecordBase):
-    def __init__(self, owner: str, ttl: Optional[int] = None):
-        super().__init__(owner, "NS", ttl)
-        self.nsdname = None  # type: str
-
-    def rrdata_format(self) -> str:
-        return self.nsdname
-
-
-class ARecord(RRecordBase):
-    def __init__(self, owner: str, ttl: Optional[int] = None):
-        super().__init__(owner, "A", ttl)
-        self.address = None  # type: str
-
-    def rrdata_format(self) -> str:
-        return self.address
-
-
-class AAAARecord(RRecordBase):
-    def __init__(self, owner: str, ttl: Optional[int] = None):
-        super().__init__(owner, "AAAA", ttl)
-        self.address = None  # type: str
-
-    def rrdata_format(self) -> str:
-        return self.address
-
-
-class MXRecord(RRecordBase):
-    def __init__(self, owner: str, ttl: Optional[int] = None):
-        super().__init__(owner, "MX", ttl)
-        self.preference = None  # type: str
-        self.exchange = None  # type: str
-
-    def rrdata_format(self) -> str:
-        return self.exchange
-
-
 class KnotConfig(KnotCtl):
 
-    def systemd_knot(self, command: str, password: str = None):
-        # cmd = "echo '{0}' | sudo - S systemctl {1} knot".format(password, command)
-        cmd = "sudo systemctl {0} knot".format(command)
+    @staticmethod
+    def systemd_knot(command: str):
 
-        # return subprocess.check_output([cmd], timeout=10)
-        return subprocess.check_output(["sudo", "systemctl", command, "knot"], timeout=10)
-
-    def restart(self, passwd: str = None):
         try:
-            resp = self.systemd_knot("restart", passwd)
+            resp = subprocess.check_output(["sudo", "systemctl", command, "knot"], timeout=10).decode("utf-8")
         except subprocess.TimeoutExpired as te:
             resp = str(te)
+
         return resp
 
-    def start(self, passwd: str = None):
-        try:
-            resp = self.systemd_knot("start", passwd)
-        except subprocess.TimeoutExpired as te:
-            resp = str(te)
-        return resp
-
-    def stop(self, passwd: str = None):
-        try:
-            resp = self.systemd_knot("stop", passwd)
-        except subprocess.TimeoutExpired as te:
-            resp = str(te)
-        return resp
-
-    def reload(self, passwd: str = None):
-        try:
-            resp = self.systemd_knot("reload", passwd)
-        except subprocess.TimeoutExpired as te:
-            resp = str(te)
-        return resp
+    #
+    # def restart(self, passwd: str = None):
+    #     try:
+    #         resp = self.systemd_knot("restart", passwd)
+    #     except subprocess.TimeoutExpired as te:
+    #         resp = str(te)
+    #     return resp
+    #
+    # def start(self, passwd: str = None):
+    #     try:
+    #         resp = self.systemd_knot("start", passwd)
+    #     except subprocess.TimeoutExpired as te:
+    #         resp = str(te)
+    #     return resp
+    #
+    # def stop(self, passwd: str = None):
+    #     try:
+    #         resp = self.systemd_knot("stop", passwd)
+    #     except subprocess.TimeoutExpired as te:
+    #         resp = str(te)
+    #     return resp
+    #
+    # def reload(self, passwd: str = None):
+    #     try:
+    #         resp = self.systemd_knot("reload", passwd)
+    #     except subprocess.TimeoutExpired as te:
+    #         resp = str(te)
+    #     return resp
 
     def __init__(self):
         super().__init__()
@@ -292,6 +219,8 @@ class KnotConfig(KnotCtl):
 
         return resp_list
 
+    # ZONE CONFIG
+
     # Returns a status data of all or one specific DNS zone
     def zone_status(self, domain_name: str = None) -> JsonNodeT:
         if not self.connected:
@@ -329,26 +258,6 @@ class KnotConfig(KnotCtl):
             self.zone_purge(domain_name)
         return resp
 
-    # Adds a resource record to DNS zone
-    def zone_add_record(self, domain_name: str, rr: RRecordBase) -> JsonNodeT:
-        if not self.connected:
-            raise KnotApiError("Knot socket is closed")
-
-        try:
-            res_data = rr.rrdata_format()
-            self.send_block("zone-set", zone=domain_name, owner=rr.owner, ttl=rr.ttl_str, rtype=rr.type, data=res_data)
-
-            debug_knot("Inserting zone \"{}\" RR, type=\"{}\", owner=\"{}\", ttl={}, data=\"{}\"".format(
-                domain_name, rr.type, rr.owner, rr.ttl_str, res_data
-            ))
-            resp = self.receive_block()
-        except KnotCtlError as e:
-            raise KnotInternalError(str(e))
-        return resp
-
-    # Removes a resource record from DNS zone
-    # If the zone contains two or more records with the same owner and type, selector parameter can specify
-    # which one to remove. Usually it is the same as record data.
     def zone_del_record(self, domain_name: str, owner: str, rr_type: str, selector: str = None) -> JsonNodeT:
         if not self.connected:
             raise KnotApiError("Knot socket is closed")
@@ -375,6 +284,56 @@ class KnotConfig(KnotCtl):
             domain_name += "."
 
         return resp[domain_name]
+
+    # REMOTE-SERVER CONFIG
+
+    # Returns a status data of all or one specific DNS zone
+    def remote_server_status(self, name: str = None) -> JsonNodeT:
+        if not self.connected:
+            raise KnotApiError("Knot socket is closed")
+
+        try:
+            self.send_block("remote-status", remote=name)
+            resp = self.receive_block()
+        except KnotCtlError as e:
+            raise KnotInternalError(str(e))
+        return resp
+
+    # Purges all zone data
+    def remote_server_purge(self, name: str = None) -> JsonNodeT:
+        if not self.connected:
+            raise KnotApiError("Knot socket is closed")
+
+        self.send_block("remote-purge", zone=name)
+        try:
+            resp = self.receive_block()
+        except KnotCtlError as e:
+            raise KnotInternalError(str(e))
+
+        return resp
+
+    # Adds a new DNS zone to configuration section
+    def remote_server_new(self, name: str) -> JsonNodeT:
+        resp = self.set_item(section="remote", identifier=None, item="name", value=name)
+        return resp
+
+    # Removes a DNS zone from configuration section
+    def remote_server_remove(self, name: str, purge_data: bool) -> JsonNodeT:
+        resp = self.unset_item(section="remote", identifier=name, item="name")
+        if purge_data:
+            self.zone_purge(name)
+        return resp
+
+    def remote_server_del_record(self, name: str, owner: str, rr_type: str, selector: str = None) -> JsonNodeT:
+        if not self.connected:
+            raise KnotApiError("Knot socket is closed")
+
+        try:
+            self.send_block("remote-unset", remote=name, owner=owner, rtype=rr_type, data=selector)
+            resp = self.receive_block()
+        except KnotCtlError as e:
+            raise KnotInternalError(str(e))
+        return resp
 
     def config_set(self, config: JsonNodeT):
         if not self.connected:
