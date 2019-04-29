@@ -18,6 +18,12 @@ class OpHandlersContainer:
         res = so.KNOT.systemd_knot("reload")
         if res is "":
             info("KnotDNS has been reloaded")
+            info("Setting datastore configuration to KnotDNS")
+            so.KNOT.knot_connect()
+            so.KNOT.begin()
+            so.KNOT.config_set(self.ds.get_data_root().add_defaults().value)
+            so.KNOT.commit()
+            so.KNOT.knot_disconnect()
         else:
             error("KnotDNS reload failed, reason: {}".format(res))
 
@@ -27,6 +33,11 @@ class OpHandlersContainer:
         res = so.KNOT.systemd_knot("restart")
         if res is "":
             info("KnotDNS has been restarted")
+            so.KNOT.knot_connect()
+            so.KNOT.begin()
+            so.KNOT.config_set(self.ds.get_data_root().add_defaults().value)
+            so.KNOT.commit()
+            so.KNOT.knot_disconnect()
         else:
             error("KnotDNS stop failed, reason: {}".format(res))
 
@@ -36,6 +47,12 @@ class OpHandlersContainer:
         res = so.KNOT.systemd_knot("start")
         if res is "":
             info("KnotDNS has been started")
+            info("Setting datastore configuration to KnotDNS")
+            so.KNOT.knot_connect()
+            so.KNOT.begin()
+            so.KNOT.config_set(self.ds.get_data_root().add_defaults().value)
+            so.KNOT.commit()
+            so.KNOT.knot_disconnect()
         else:
             error("KnotDNS start failed, reason: {}".format(res))
 

@@ -21,6 +21,27 @@ These requirements should be installed by just running installation or by using 
 $ python setup.py install
 ```
 
+### Allow running knot systemd command without sudo password
+Create a new group, for example `knotcontrol`
+```bash
+$ sudo groupadd knotcontrol
+```
+Add `jetconf` user or user who is running knot to this group.
+```bash
+$ usermod -a -G knotcontrol jetconf
+```
+Create the new sudoers configuration file in `sudoers.d` directory
+```bash
+$ sudo nano /etc/sudoers.d/knotcontrol
+```
+Add these rules to this file 
+```bash
+Cmnd_Alias KNOT_CMDS = /bin/systemctl start knot, /bin/systemctl stop knot, /bin/systemctl reload knot, /bin/systemctl restart knot
+%knotcontrol ALL=(ALL) NOPASSWD: KNOT_CMDS
+```
+Now every user, which is member of `knotcontrol` group cal execute `systemctl` commands for `knot` with `sudo` and sudo password is not needed.
+
+
 ## Running with JetConf
 Start KnotDNS
 ```bash
