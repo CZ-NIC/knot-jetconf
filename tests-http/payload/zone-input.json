@@ -1,0 +1,12 @@
+{
+  "cznic-dns-slave-server:zone": {
+                    "domain": ".",
+                    "description": "root zone",
+		    "role": "slave",
+                    "master": ["icann-axfr"],
+                    "notify": {
+                        "recipient": ["exrec"]
+                    }
+  }
+}
+

@@ -1,0 +1,35 @@
+{
+  "cznic-dns-slave-server:remote-server": [
+				{
+					"name": "rs-test",
+					"description": "remote server",
+					"remote": {
+						"ip-address": "2620:0:2a0:201::132"
+					}
+				},
+				{
+					"name": "rs-test2",
+					"description": "remote server 2",
+					"remote": {
+						"ip-address": "198.40.20.1",
+						"port": 555
+					}
+				},
+	  			{
+					"name": "icann-axfr",
+					"description": "ICANN-provided source for the root zone.",
+					"remote": {
+						"ip-address": "2620:0:2d0:202::132"
+					}
+				},
+				{
+					"name": "exrec",
+					"description": "Example recipient of notifications.",
+					"remote": {
+						"ip-address": "198.51.100.1",
+						"port": 6378
+					}
+				}
+			]
+}
+

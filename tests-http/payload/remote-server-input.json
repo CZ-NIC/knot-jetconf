@@ -1,0 +1,11 @@
+{
+  "cznic-dns-slave-server:remote-server":
+				{
+					"name": "icann-axfr",
+					"description": "ICANN-provided source for the root zone.",
+					"remote": {
+						"ip-address": "2620:0:2d0:202::132"
+					}
+				}
+}
+

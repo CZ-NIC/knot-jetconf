@@ -23,31 +23,17 @@
                 "rule": [
                     {
                         "name": "permit-zone-config-access",
-                        "path": "/dns-server:dns-server/zones",
+                        "path": "cznic-dns-slave-server:dns-server/zones/zone",
                         "access-operations": "create update delete",
                         "comment": "Users can write zone configuration",
                         "action": "permit"
                     },
                     {
-                        "name": "permit-server-config-access",
-                        "path": "/dns-server:dns-server/server-options",
+                        "name": "permit-remote-server-config-access",
+                        "path": "cznic-dns-slave-server:dns-server/remote-server",
                         "access-operations": "create update delete",
-                        "comment": "Users can write some server options.",
+                        "comment": "Users can write zone configuration",
                         "action": "permit"
-                    },
-                    {
-                        "name": "permit-zone-data-access",
-                        "path": "/dns-zones:zone-data",
-                        "access-operations": "create update delete",
-                        "comment": "Users can edit zone data.",
-                        "action": "permit"
-                    },
-                    {
-                        "name": "deny-something",
-                        "path": "/dns-server:dns-server/zones/zone[domain='example.com.']/file",
-                        "access-operations": "*",
-                        "comment": "Users can not read this.",
-                        "action": "deny"
                     }
                 ]
             }

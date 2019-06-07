@@ -14,8 +14,8 @@ setup(
     description="KnotDNS JetConf backend for common DNS configuration YANG data model",
     long_description=long_description,
     url="https://gitlab.labs.nic.cz/labs/jetconf-knot",
-    author="Pavel Spirek",
-    author_email="pavel.spirek@nic.cz",
+    author="Ales Mrazek",
+    author_email="ales.mrazek@nic.cz",
     install_requires=["jetconf", "libknot"],
     keywords=["DNS", "RESTCONF", "YANG", "data model", "Jetconf"],
     classifiers=[

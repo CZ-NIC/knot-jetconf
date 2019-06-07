@@ -42,16 +42,22 @@ class UserDatastore(JsonDatastore):
                 error("Cannot load KnotDNS configuration, reason: {}".format(ErrorHelpers.epretty(e)))
 
         else:
-            # Set datastore configuration to KnotDNS
-            info("Setting datastore configuration to KnotDNS")
-            try:
-                so.KNOT.knot_connect()
-                so.KNOT.begin()
-                so.KNOT.config_set(self.get_data_root().add_defaults().value)
-                so.KNOT.commit()
-                so.KNOT.knot_disconnect()
-            except KnotError as e:
-                error("Cannot set KnotDNS configuration, reason: {}".format(ErrorHelpers.epretty(e)))
+
+            root_data = self.get_data_root()
+            if "cznic-dns-slave-server:dns-server" in root_data:
+                # Set datastore configuration to KnotDNS
+                info("Setting datastore configuration to KnotDNS")
+                try:
+                    so.KNOT.knot_connect()
+                    so.KNOT.begin()
+                    so.KNOT.config_set(root_data.add_defaults().value)
+                    so.KNOT.commit()
+                    so.KNOT.knot_disconnect()
+                except KnotError as e:
+                    error("Cannot set KnotDNS configuration, reason: {}".format(ErrorHelpers.epretty(e)))
+
+            else:
+                info("No configuration for KnotDNS was found in datastore")
 
     def save(self):
 

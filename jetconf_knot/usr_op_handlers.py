@@ -33,6 +33,7 @@ class OpHandlersContainer:
         res = so.KNOT.systemd_knot("restart")
         if res is "":
             info("KnotDNS has been restarted")
+            info("Setting datastore configuration to KnotDNS")
             so.KNOT.knot_connect()
             so.KNOT.begin()
             so.KNOT.config_set(self.ds.get_data_root().add_defaults().value)

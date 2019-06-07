@@ -1,0 +1,23 @@
+{
+  "cznic-dns-slave-server:zone": [
+    {
+      "domain": "example.eu.",
+      "description": "eu zone",
+      "master": ["icann-axfr"],
+      "role": "slave",
+      "notify": {
+        "recipient": ["exrec"]
+      }
+    },
+    {
+      "domain": ".",
+      "description": "root zone",
+      "master": ["icann-axfr"],
+      "role": "slave",
+      "notify": {
+          "recipient": ["exrec"]
+      }
+    }
+  ]
+}
+

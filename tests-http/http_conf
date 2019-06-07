@@ -1,0 +1,4 @@
+
+JC_URL=https://localhost:8443
+
+CLIENT_CERT="../conf/example-client_curl.pem"
