@@ -219,7 +219,7 @@ class KnotConfig(KnotCtl):
 
     # Adds a new DNS zone to configuration section
     def zone_set(self, zone) -> JsonNodeT:
-        domain = zone.get("name")
+        domain = zone.get("domain")
 
         # set domain
         self.set_item(
@@ -261,17 +261,6 @@ class KnotConfig(KnotCtl):
         if purge_data:
             self.zone_purge(domain_name)
         return resp
-
-    # def zone_del_record(self, domain_name: str, owner: str, rr_type: str, selector: str = None) -> JsonNodeT:
-    #     if not self.connected:
-    #         raise KnotApiError("Knot socket is closed")
-    #
-    #     try:
-    #         self.send_block("zone-unset", zone=domain_name, owner=owner, rtype=rr_type, data=selector)
-    #         resp = self.receive_block()
-    #     except KnotCtlError as e:
-    #         raise KnotInternalError(str(e))
-    #     return resp
 
     # Reads zone data and converts them to YANG model compliant data tree
     def zone_read(self, domain_name: str) -> JsonNodeT:
@@ -356,17 +345,6 @@ class KnotConfig(KnotCtl):
             self.zone_purge(name)
         return resp
 
-    # def remote_server_del_record(self, name: str, owner: str, rr_type: str, selector: str = None) -> JsonNodeT:
-    #     if not self.connected:
-    #         raise KnotApiError("Knot socket is closed")
-    #
-    #     try:
-    #         self.send_block("remote-unset", remote=name, owner=owner, rtype=rr_type, data=selector)
-    #         resp = self.receive_block()
-    #     except KnotCtlError as e:
-    #         raise KnotInternalError(str(e))
-    #     return resp
-
     def config_set(self, config: JsonNodeT):
         if not self.connected:
             raise KnotApiError("Knot socket is closed")
@@ -383,76 +361,12 @@ class KnotConfig(KnotCtl):
 
                 self.remote_server_set(remote=rem_server)
 
-                #name = rem_server.get("name")
-
-                # # set remote-server
-                # self.set_item(
-                #     section="remote",
-                #     identifier=None,
-                #     item="id",
-                #     value=name
-                # )
-                #
-                # # set description
-                # if 'description' in rem_server:
-                #     self.set_item(
-                #         section="remote",
-                #         identifier=name,
-                #         item="comment",
-                #         value=rem_server.get("description")
-                #     )
-                #
-                # address = rem_server.get("remote", {}).get("ip-address") + "@" + str(rem_server.get("remote", {}).get("port"))
-                #
-                # # set address
-                # self.set_item_list(
-                #     section="remote",
-                #     identifier=name,
-                #     item="address",
-                #     value=[address]
-                # )
-
         if 'zone' in conf['zones']:
             # set zone configuration
             self.unset_section(section="zone")
             for zone in conf['zones']['zone']:
 
                 self.zone_set(zone=zone)
-
-                # domain = zone.get("domain")
-                #
-                # # set domain
-                # self.set_item(
-                #     section="zone",
-                #     identifier=None,
-                #     item="domain",
-                #     value=domain
-                # )
-                #
-                # # set description
-                # if 'description' in zone:
-                #     self.set_item(
-                #         section="zone",
-                #         identifier=domain,
-                #         item="comment",
-                #         value=zone.get("description")
-                #     )
-                #
-                # # set master
-                # self.set_item_list(
-                #     section="zone",
-                #     identifier=domain,
-                #     item="master",
-                #     value=zone.get("master", [])
-                # )
-                #
-                # # set notify
-                # self.set_item_list(
-                #     section="zone",
-                #     identifier=domain,
-                #     item="notify",
-                #     value=zone.get("notify", {}).get("recipient", [])
-                # )
 
     # Reads all configuration data and converts them to YANG model compliant data tree
     def config_read(self) -> JsonNodeT:
