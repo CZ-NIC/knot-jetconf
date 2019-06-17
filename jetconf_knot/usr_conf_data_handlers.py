@@ -1,7 +1,9 @@
 from yangson.instance import InstanceRoute, EntryKeys
 from jetconf.data import BaseDatastore, ChangeType, DataChange
 from jetconf.helpers import LogHelpers
-from jetconf.handler_base import ConfDataListHandler
+from jetconf.handler_base import ConfDataListHandler, ConfDataObjectHandler
+from jetconf.nacm import NacmRuleList, NacmRule, NacmRuleType, Action, Permission, NacmGroup
+from typing import Set
 
 from . import shared_objs as so
 
@@ -10,10 +12,18 @@ debug_confh = LogHelpers.create_module_dbg_logger(__name__)
 
 # ---------- User-defined handlers follow ----------
 
+class RootHandler(ConfDataObjectHandler):
+    def replace(self, ii: InstanceRoute, ch: DataChange):
+        debug_confh(self.__class__.__name__ + " replace triggered")
+
+        root_nv = self.ds.get_data_root().add_defaults().value
+
+        so.KNOT.config_set(root_nv)
+
+
 class RemoteHandler(ConfDataListHandler):
 
     def create_item(self, ii: InstanceRoute, ch: DataChange):
-
         debug_confh(self.__class__.__name__ + " create item triggered")
 
         # Create new remote-server
@@ -126,10 +136,10 @@ def commit_end(failed: bool = False):
 
 
 def register_conf_handlers(ds: BaseDatastore):
+    ds.handlers.conf.register(RootHandler(ds, "/"))
     ds.handlers.conf.register(RemoteHandler(ds, "/cznic-dns-slave-server:dns-server/remote-server"))
     ds.handlers.conf.register(KnotZoneHandler(ds, "/cznic-dns-slave-server:dns-server/zones/zone"))
 
     # Set datastore commit callbacks
     ds.handlers.commit_begin = commit_begin
     ds.handlers.commit_end = commit_end
-

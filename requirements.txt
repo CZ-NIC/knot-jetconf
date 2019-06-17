@@ -1,2 +1,2 @@
-jetconf
+git+https://gitlab.labs.nic.cz/labs/jetconf.git#egg=jetconf
 libknot

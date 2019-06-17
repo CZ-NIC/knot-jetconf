@@ -14,11 +14,6 @@ class UserDatastore(JsonDatastore):
         super().load()
 
         so.KNOT = KnotConfig()
-        # config.CFG.root['KNOT'] = {
-        #     'LOAD_CONF': False,
-        #     'SOCKET': '/run/knot/knot.sock'}
-        #
-
 
         # Initialize Knot control interface
         try:
