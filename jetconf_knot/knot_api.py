@@ -7,6 +7,7 @@ from jetconf.errors import BackendError
 
 from libknot.control import KnotCtl, KnotCtlType, KnotCtlError
 import subprocess
+from . import shared_objs as so
 
 JsonNodeT = Union[Dict[str, Any], List[Any], str, int]
 debug_knot = LogHelpers.create_module_dbg_logger(__name__)
@@ -245,6 +246,28 @@ class KnotConfig(KnotCtl):
                 item="master",
                 value=zone.get("master", [])
             )
+        elif 'file' in zone:
+            # set zonefile
+            path = zone.get("file")
+            if path.startswith("/"):
+                storage, file = path.rsplit("/", 1)
+            else:
+                storage = so.ZONES_DIR
+                file = path
+
+            self.set_item_list(
+                section="zone",
+                identifier=domain,
+                item="storage",
+                value=[storage]
+            )
+
+            self.set_item_list(
+                section="zone",
+                identifier=domain,
+                item="file",
+                value=[file]
+            )
 
         if 'notify' in zone:
             # set notify
@@ -349,10 +372,13 @@ class KnotConfig(KnotCtl):
         if not self.connected:
             raise KnotApiError("Knot socket is closed")
 
-        if 'cznic-dns-slave-server:dns-server' in config:
-            conf = config['cznic-dns-slave-server:dns-server']
+        if 'cznic-dns-server-simple:dns-server' in config:
+            conf = config['cznic-dns-server-simple:dns-server']
         else:
             conf = config
+
+        if "zones-dir" in conf:
+            so.ZONES_DIR = conf["zones-dir"]
 
         if 'remote-server' in conf:
             # set remote server configuration
@@ -401,12 +427,21 @@ class KnotConfig(KnotCtl):
         if 'zone' in resp:
 
             for zone in resp['zone']:
-                zone_dict = {'domain': zone}
+                zone_dict = {'domain': zone, 'role': "master"}
+
+                if 'file' in resp['zone'][zone]:
+                    file = str(resp['zone'][zone]['file'])[2:-2]
+                    if 'storage' in resp['zone'][zone]:
+                        zone_dict['file'] = str(resp['zone'][zone]['storage'])[2:-2] + "/" + file
+                    else:
+                        zone_dict['file'] = file
 
                 if 'master' in resp['zone'][zone]:
                     zone_dict['master'] = resp['zone'][zone]['master']
+
                 if 'notify' in resp['zone'][zone]:
                     zone_dict['notify'] = {"recipient": resp['zone'][zone]['notify']}
+                    zone_dict['role'] = "slave"
 
                 zones_dict.append(zone_dict.copy())
 
@@ -417,4 +452,4 @@ class KnotConfig(KnotCtl):
         if zones_dict:
             conf_data['zones']['zone'] = zones_dict
 
-        return {"cznic-dns-slave-server:dns-server": conf_data}
+        return {"cznic-dns-server-simple:dns-server": conf_data}

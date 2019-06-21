@@ -29,8 +29,8 @@ class UserDatastore(JsonDatastore):
                 so.KNOT.knot_connect()
                 knot_conf_json = so.KNOT.config_read()
                 so.KNOT.knot_disconnect()
-                new_root = self._data.put_member("cznic-dns-slave-server:dns-server",
-                                                 knot_conf_json["cznic-dns-slave-server:dns-server"],
+                new_root = self._data.put_member("cznic-dns-server-simple:dns-server",
+                                                 knot_conf_json["cznic-dns-server-simple:dns-server"],
                                                  raw=True).top()
                 self.set_data_root(new_root)
             except KnotError as e:
@@ -39,7 +39,7 @@ class UserDatastore(JsonDatastore):
         else:
 
             root_data = self.get_data_root()
-            if "cznic-dns-slave-server:dns-server" in root_data:
+            if "cznic-dns-server-simple:dns-server" in root_data:
                 # Set datastore configuration to KnotDNS
                 info("Setting datastore configuration to KnotDNS")
                 try:

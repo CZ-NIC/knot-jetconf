@@ -71,10 +71,10 @@ def register_op_handlers(ds: BaseDatastore):
     op_handlers_obj = OpHandlersContainer(ds)
 
     ds.handlers.op.register(op_handlers_obj.reload_server_op,
-                            "cznic-dns-slave-server:reload-server")
+                            "cznic-dns-server-simple:reload-server")
     ds.handlers.op.register(op_handlers_obj.restart_server_op,
-                            "cznic-dns-slave-server:restart-server")
+                            "cznic-dns-server-simple:restart-server")
     ds.handlers.op.register(op_handlers_obj.start_server_op,
-                            "cznic-dns-slave-server:start-server")
+                            "cznic-dns-server-simple:start-server")
     ds.handlers.op.register(op_handlers_obj.stop_server_op,
-                            "cznic-dns-slave-server:stop-server")
+                            "cznic-dns-server-simple:stop-server")

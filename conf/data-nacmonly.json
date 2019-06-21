@@ -1,0 +1,112 @@
+{
+    "cznic-dns-server-simple:dns-server": {
+			"description": "Simple configuration of a DNS server.",
+			"zones-dir": "/home/jetconf/knot-conf",
+            "remote-server": [],
+			"zones": {
+                "zone":[]
+    }},
+    "ietf-netconf-acm:nacm": {
+        "enable-nacm": true,
+        "read-default": "permit",
+        "write-default": "deny",
+        "exec-default": "deny",
+        "groups": {
+            "group": [
+                {
+                    "name": "admin",
+                    "user-name": [
+                    ]
+                },
+                {
+                    "name": "guest",
+                    "user-name": [
+                    ]
+                }
+            ]
+        },
+        "rule-list": [
+            {
+                "name": "admin-rules",
+                "group": [
+                    "admin"
+                ],
+                "rule": [
+                    {
+                        "name": "configuration-data",
+                        "path": "/cznic-dns-server-simple:dns-server",
+                        "access-operations": "*",
+                        "comment": "Admin can do everything with this",
+                        "action": "permit"
+                    },
+                    {
+                        "name": "start-server",
+                        "rpc-name": "cznic-dns-server-simple:start-server",
+                        "access-operations": "exec",
+                        "comment": "Admin can start DNS",
+                        "action": "permit"
+                    },
+                    {
+                        "name": "reload-server",
+                        "rpc-name": "cznic-dns-server-simple:reload-server",
+                        "access-operations": "exec",
+                        "comment": "Anmin can reload DNS",
+                        "action": "permit"
+                    },
+                    {
+                        "name": "restart-server",
+                        "rpc-name": "cznic-dns-server-simple:restart-server",
+                        "access-operations": "exec",
+                        "comment": "Admin can restart DNS",
+                        "action": "permit"
+                    }
+                ]
+            },
+            {
+                "name": "guest-permit",
+                "group": [
+                    "guest"
+                ],
+                "rule": [
+                    {
+                        "name": "create-remote-server",
+                        "path": "cznic-dns-server-simple:dns-server/remote-server",
+                        "access-operations": "create",
+                        "comment": "Guest can create remote-server",
+                        "action": "permit"
+                    },
+                    {
+                        "name": "restart-server",
+                        "rpc-name": "cznic-dns-server-simple:restart-server",
+                        "access-operations": "exec",
+                        "comment": "Guest can restart DNS",
+                        "action": "permit"
+                    }
+                ]
+            },
+            {
+                "name": "global-deny",
+                "group": [
+                    "guest"
+                ],
+                "rule": [
+                    {
+                        "name": "delete-configuration-data",
+                        "path": "/cznic-dns-server-simple:dns-server",
+                        "access-operations": "delete",
+                        "comment": "Guest can not delete configuration data",
+                        "action": "deny"
+                    },
+                    {
+                        "name": "modules-access",
+                        "path": "/ietf-yang-library:modules-state",
+                        "access-operations": "*",
+                        "comment": "Guest can do nothing with yang modules",
+                        "action": "deny"
+                    }
+
+                ]
+            }
+        ]
+    }
+}

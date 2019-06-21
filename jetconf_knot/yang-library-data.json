@@ -3,9 +3,9 @@
     "module-set-id": "e595da11ace92c0d881995fa7e56bbe86f1f48e9",
     "module": [
       {
-        "name": "cznic-dns-slave-server",
-        "revision": "2019-03-24",
-        "namespace": "http://www.nic.cz/ns/yang/dns-slave-server",
+        "name": "cznic-dns-server-simple",
+        "revision": "2019-06-21",
+        "namespace": "http://www.nic.cz/ns/yang/dns-server-simple",
         "conformance-type": "implement"
       },
       {

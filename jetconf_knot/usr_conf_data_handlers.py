@@ -27,8 +27,8 @@ class RemoteHandler(ConfDataListHandler):
         debug_confh(self.__class__.__name__ + " create item triggered")
 
         # Create new remote-server
-        name = ch.input_data["cznic-dns-slave-server:remote-server"]["name"]
-        remote_nv = ch.input_data["cznic-dns-slave-server:remote-server"]
+        name = ch.input_data["cznic-dns-server-simple:remote-server"]["name"]
+        remote_nv = ch.input_data["cznic-dns-server-simple:remote-server"]
         debug_confh("Creating new remote-server \"{}\"".format(name))
 
         so.KNOT.remote_server_set(remote_nv)
@@ -73,8 +73,8 @@ class KnotZoneHandler(ConfDataListHandler):
         debug_confh(self.__class__.__name__ + " create item triggered")
 
         # Create new zone
-        domain = ch.input_data["cznic-dns-slave-server:zone"]["domain"]
-        zone_nv = ch.input_data["cznic-dns-slave-server:zone"]
+        domain = ch.input_data["cznic-dns-server-simple:zone"]["domain"]
+        zone_nv = ch.input_data["cznic-dns-server-simple:zone"]
         debug_confh("Creating new zone \"{}\"".format(domain))
 
         so.KNOT.zone_set(zone_nv)
@@ -137,8 +137,8 @@ def commit_end(failed: bool = False):
 
 def register_conf_handlers(ds: BaseDatastore):
     ds.handlers.conf.register(RootHandler(ds, "/"))
-    ds.handlers.conf.register(RemoteHandler(ds, "/cznic-dns-slave-server:dns-server/remote-server"))
-    ds.handlers.conf.register(KnotZoneHandler(ds, "/cznic-dns-slave-server:dns-server/zones/zone"))
+    ds.handlers.conf.register(RemoteHandler(ds, "/cznic-dns-server-simple:dns-server/remote-server"))
+    ds.handlers.conf.register(KnotZoneHandler(ds, "/cznic-dns-server-simple:dns-server/zones/zone"))
 
     # Set datastore commit callbacks
     ds.handlers.commit_begin = commit_begin
