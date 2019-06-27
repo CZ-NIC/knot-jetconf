@@ -221,6 +221,7 @@ class KnotConfig(KnotCtl):
     # Adds a new DNS zone to configuration section
     def zone_set(self, zone) -> JsonNodeT:
         domain = zone.get("domain")
+        acl = []
 
         # set domain
         self.set_item(
@@ -246,6 +247,9 @@ class KnotConfig(KnotCtl):
                 item="master",
                 value=zone.get("master", [])
             )
+            for mas in zone.get("master", []):
+                acl.append(mas + "_acl")
+
         elif 'file' in zone:
             # set zonefile
             path = zone.get("file")
@@ -276,6 +280,17 @@ class KnotConfig(KnotCtl):
                 identifier=domain,
                 item="notify",
                 value=zone.get("notify", {}).get("recipient", [])
+            )
+            for rec in zone.get("notify", {}).get("recipient", []):
+                acl.append(rec + "_acl")
+
+        if acl:
+            # this must be done because simple-dns-model dont have acl
+            self.set_item_list(
+                section="zone",
+                identifier=domain,
+                item="acl",
+                value=acl
             )
 
     # Removes a DNS zone from configuration section
@@ -361,6 +376,28 @@ class KnotConfig(KnotCtl):
             value=[address]
         )
 
+        # create acl
+        self.set_item(
+            section="acl",
+            identifier=None,
+            item="id",
+            value=name + "_acl"
+        )
+        self.set_item(
+            section="acl",
+            identifier=name + "_acl",
+            item="address",
+            value=remote.get("remote", {}).get("ip-address")
+        )
+        self.set_item(
+            section="acl",
+            identifier=name + "_acl",
+            item="action",
+            value="transfer"
+        )
+
+
+
     # Removes a DNS zone from configuration section
     def remote_server_remove(self, name: str, purge_data: bool) -> JsonNodeT:
         resp = self.unset_item(section="remote", identifier=name, item="name")
@@ -379,6 +416,8 @@ class KnotConfig(KnotCtl):
 
         if "zones-dir" in conf:
             so.ZONES_DIR = conf["zones-dir"]
+
+        self.unset_section(section="acl")
 
         if 'remote-server' in conf:
             # set remote server configuration

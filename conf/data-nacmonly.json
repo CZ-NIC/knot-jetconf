@@ -1,7 +1,7 @@
 {
     "cznic-dns-server-simple:dns-server": {
 			"description": "Simple configuration of a DNS server.",
-			"zones-dir": "/home/jetconf/knot-conf",
+			"zones-dir": "/etc/knot",
             "remote-server": [],
 			"zones": {
                 "zone":[]
