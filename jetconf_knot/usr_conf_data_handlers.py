@@ -39,17 +39,21 @@ class RemoteHandler(ConfDataListHandler):
     def replace_item(self, ii: InstanceRoute, ch: DataChange):
         debug_confh(self.__class__.__name__ + " replace item triggered")
 
-        # Edit particular remote-server
-        name = ii[2].keys[("name", None)]
-        debug_confh("Editing config of remote-server \"{}\"".format(name))
+        if len(ii) > 2:
+            # Edit particular remote-server
+            name = ii[2].keys[("name", None)]
+            debug_confh("Editing config of remote-server \"{}\"".format(name))
 
-        # Write whole remote-server config to Knot
-        remote_nv = self.ds.get_data_root().add_defaults().goto(ii[0:3]).value
+            # Write whole remote-server config to Knot
+            remote_nv = self.ds.get_data_root().add_defaults().goto(ii[0:3]).value
 
-        # clear specific remote-server
-        so.KNOT.unset_section(section="remote", identifier=name)
-        # set new updated remote-server
-        so.KNOT.remote_server_set(remote_nv)
+            # clear specific remote-server
+            so.KNOT.unset_section(section="remote", identifier=name)
+            # set new updated remote-server
+            so.KNOT.remote_server_set(remote_nv)
+        else:
+            root_nv = self.ds.get_data_root().add_defaults().value
+            so.KNOT.config_set(root_nv)
 
     def replace_list(self, ii: InstanceRoute, ch: DataChange):
         debug_confh(self.__class__.__name__ + " replace list triggered")
@@ -85,17 +89,21 @@ class KnotZoneHandler(ConfDataListHandler):
     def replace_item(self, ii: InstanceRoute, ch: DataChange):
         debug_confh(self.__class__.__name__ + " replace item triggered")
 
-        # Edit particular zone
-        domain = ii[3].keys[("domain", None)]
-        debug_confh("Editing config of zone \"{}\"".format(domain))
+        if len(ii) > 3:
+            # Edit particular zone
+            domain = ii[3].keys[("domain", None)]
+            debug_confh("Editing config of zone \"{}\"".format(domain))
 
-        # Write whole zone config to Knot
-        zone_nv = self.ds.get_data_root().add_defaults().goto(ii[0:4]).value
+            # Write whole zone config to Knot
+            zone_nv = self.ds.get_data_root().add_defaults().goto(ii[0:4]).value
 
-        # clear zone
-        so.KNOT.unset_section(section="zone", identifier=domain)
-        # set new updated zone
-        so.KNOT.zone_set(zone_nv)
+            # clear zone
+            so.KNOT.unset_section(section="zone", identifier=domain)
+            # set new updated zone
+            so.KNOT.zone_set(zone_nv)
+        else:
+            root_nv = self.ds.get_data_root().add_defaults().value
+            so.KNOT.config_set(root_nv)
 
     def replace_list(self, ii: InstanceRoute, ch: DataChange):
         debug_confh(self.__class__.__name__ + " replace list triggered")
