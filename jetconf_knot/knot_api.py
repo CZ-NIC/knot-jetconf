@@ -221,6 +221,9 @@ class KnotConfig(KnotCtl):
     # Adds a new DNS zone to configuration section
     def zone_set(self, zone) -> JsonNodeT:
         domain = zone.get("domain")
+        if domain != ".":
+            domain = zone.get("domain").rstrip(".")
+
         acl = []
 
         # set domain
@@ -239,7 +242,7 @@ class KnotConfig(KnotCtl):
                 value=zone.get("description")
             )
 
-        if 'master' in zone:
+        if zone['role'] is 'master':
             # set master
             self.set_item_list(
                 section="zone",
@@ -250,7 +253,21 @@ class KnotConfig(KnotCtl):
             for mas in zone.get("master", []):
                 acl.append(mas + "_acl")
 
-        elif 'file' in zone:
+            self.set_item_list(
+                section="zone",
+                identifier=domain,
+                item="storage",
+                value=[so.ZONES_DIR]
+            )
+            file_name = domain + '.zone'
+            self.set_item_list(
+                section="zone",
+                identifier=domain,
+                item="file",
+                value=[file_name]
+            )
+
+        elif zone['role'] is 'slave':
             # set zonefile
             path = zone.get("file")
             if path.startswith("/"):
