@@ -1,6 +1,6 @@
 YAM = ../yang-modules
 YANGLIB = ../jetconf_knot/yang-library-data.json
-INST = example-data-nacm.json
+INST = data-nacmonly.json
 .PHONY: validate
 
 validate:

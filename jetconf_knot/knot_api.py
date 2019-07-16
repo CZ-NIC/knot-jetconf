@@ -251,6 +251,25 @@ class KnotConfig(KnotCtl):
             for mas in zone.get("master", []):
                 acl.append(mas + "_acl")
 
+                try:
+                    self.send_block("conf-read",
+                                    section="acl",
+                                    identifier=mas + "_acl",
+                                    item="action",
+                                    )
+                    res = self.receive_block()
+                    actions = res['acl'][mas + "_acl"]['action']
+                    actions.append("notify")
+
+                    self.set_item_list(
+                        section="acl",
+                        identifier=mas + "_acl",
+                        item="action",
+                        value=actions
+                    )
+                except KnotCtlError as e:
+                    raise KnotInternalError(str(e))
+
             self.set_item_list(
                 section="zone",
                 identifier=domain,
@@ -290,6 +309,28 @@ class KnotConfig(KnotCtl):
                 value=[file]
             )
 
+        if 'allow-update' in zone:
+            for up in zone.get("allow-update", []):
+                acl.append(up + "_acl")
+                try:
+                    self.send_block("conf-read",
+                                    section="acl",
+                                    identifier=up + "_acl",
+                                    item="action",
+                                    )
+                    res = self.receive_block()
+                    actions = res['acl'][up + "_acl"]['action']
+                    actions.append("update")
+
+                    self.set_item_list(
+                        section="acl",
+                        identifier=up + "_acl",
+                        item="action",
+                        value=actions
+                    )
+                except KnotCtlError as e:
+                    raise KnotInternalError(str(e))
+
         if 'notify' in zone:
             # set notify
             self.set_item_list(
@@ -301,8 +342,27 @@ class KnotConfig(KnotCtl):
             for rec in zone.get("notify", {}).get("recipient", []):
                 acl.append(rec + "_acl")
 
+                # try:
+                #     self.send_block("conf-read",
+                #                     section="acl",
+                #                     identifier=rec + "_acl",
+                #                     item="action",
+                #                     )
+                #     res = self.receive_block()
+                #     actions = res['acl'][rec + "_acl"]['action']
+                #     actions.append("transfer")
+                #
+                #     self.set_item_list(
+                #         section="acl",
+                #         identifier=rec + "_acl",
+                #         item="action",
+                #         value=actions
+                #     )
+                # except KnotCtlError as e:
+                #     raise KnotInternalError(str(e))
+
         if acl:
-            # this must be done because simple-dns-model dont have acl
+            # this must be done because simple-dns-model dont have acl model implementation
             self.set_item_list(
                 section="zone",
                 identifier=domain,
@@ -406,14 +466,12 @@ class KnotConfig(KnotCtl):
             item="address",
             value=remote.get("remote", {}).get("ip-address")
         )
-        self.set_item(
+        self.set_item_list(
             section="acl",
             identifier=name + "_acl",
             item="action",
-            value="transfer"
+            value=["transfer"]
         )
-
-
 
     # Removes a DNS zone from configuration section
     def remote_server_remove(self, name: str, purge_data: bool) -> JsonNodeT:
@@ -440,14 +498,12 @@ class KnotConfig(KnotCtl):
             # set remote server configuration
             self.unset_section(section="remote")
             for rem_server in conf['remote-server']:
-
                 self.remote_server_set(remote=rem_server)
 
         if 'zone' in conf['zones']:
             # set zone configuration
             self.unset_section(section="zone")
             for zone in conf['zones']['zone']:
-
                 self.zone_set(zone=zone)
 
     # Reads all configuration data and converts them to YANG model compliant data tree
