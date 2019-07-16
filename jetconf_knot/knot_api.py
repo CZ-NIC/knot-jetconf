@@ -276,16 +276,7 @@ class KnotConfig(KnotCtl):
                 item="storage",
                 value=[so.ZONES_DIR]
             )
-            file_name = domain + 'zone'
-            if file_name == '.zone':
-                file_name = "root.zone"
-            self.set_item_list(
-                section="zone",
-                identifier=domain,
-                item="file",
-                value=[file_name]
-            )
-
+            
         elif zone['role'] == 'master':
             # set zonefile
             path = zone.get("file")
