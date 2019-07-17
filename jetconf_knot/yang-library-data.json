@@ -4,7 +4,7 @@
     "module": [
       {
         "name": "cznic-dns-server-simple",
-        "revision": "2019-07-15",
+        "revision": "2019-07-17",
         "namespace": "http://www.nic.cz/ns/yang/dns-server-simple",
         "conformance-type": "implement"
       },

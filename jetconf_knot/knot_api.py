@@ -35,6 +35,26 @@ class KnotConfState(Enum):
     ZONE = 2
 
 
+class Acl:
+    id: str
+    ip: [str]
+    actions: str
+
+    def __init__(self, id, ip):
+        self.id = id
+        self.ip = ip
+        self.actions = []
+
+
+class ZoneAcl:
+    zone_id: str
+    acl: []
+
+    def __init__(self, zone_id, acl):
+        self.zone_id = zone_id
+        self.acl = acl
+
+
 class KnotConfig(KnotCtl):
 
     @staticmethod
@@ -53,6 +73,9 @@ class KnotConfig(KnotCtl):
         self.connected = False
         self.socket_lock = Lock()
         self.conf_state = KnotConfState.NONE
+
+        self.remote_acl = []
+        self.zone_acl = []
 
     def set_socket(self, sock_path: str):
         self.sock_path = sock_path
@@ -191,34 +214,38 @@ class KnotConfig(KnotCtl):
 
         return resp_list
 
-    # ZONE CONFIG
+    def acl_set(self):
 
-    # Returns a status data of all or one specific DNS zone
-    def zone_status(self, domain_name: str = None) -> JsonNodeT:
-        if not self.connected:
-            raise KnotApiError("Knot socket is closed")
+        for racl in self.remote_acl:
+            if racl.actions:
+                self.set_item(
+                    section="acl",
+                    identifier=None,
+                    item="id",
+                    value=racl.id
+                )
+                self.set_item_list(
+                    section="acl",
+                    identifier=racl.id,
+                    item="address",
+                    value=racl.ip
+                )
+                self.set_item_list(
+                    section="acl",
+                    identifier=racl.id,
+                    item="action",
+                    value=racl.actions
+                )
 
-        try:
-            self.send_block("zone-status", zone=domain_name)
-            resp = self.receive_block()
-        except KnotCtlError as e:
-            raise KnotInternalError(str(e))
-        return resp
+        for zacl in self.zone_acl:
+            if zacl.acl:
+                self.set_item_list(
+                    section="zone",
+                    identifier=zacl.zone_id,
+                    item="acl",
+                    value=zacl.acl
+                )
 
-    # Purges all zone data
-    def zone_purge(self, domain_name: str = None) -> JsonNodeT:
-        if not self.connected:
-            raise KnotApiError("Knot socket is closed")
-
-        self.send_block("zone-purge", zone=domain_name)
-        try:
-            resp = self.receive_block()
-        except KnotCtlError as e:
-            raise KnotInternalError(str(e))
-
-        return resp
-
-    # Adds a new DNS zone to configuration section
     def zone_set(self, zone) -> JsonNodeT:
         domain = zone.get("domain")
 
@@ -240,8 +267,31 @@ class KnotConfig(KnotCtl):
                 value=zone.get("description")
             )
 
-        if zone['role'] == 'slave':
-            # set master
+        if 'file' in zone:
+            path = zone.get("file")
+            if path.startswith("/"):
+                storage, file = path.rsplit("/", 1)
+            else:
+                storage = so.ZONES_DIR
+                file = path
+        else:
+            storage = so.ZONES_DIR
+            file = domain + "zone"
+        self.set_item_list(
+            section="zone",
+            identifier=domain,
+            item="storage",
+            value=[storage]
+        )
+
+        self.set_item_list(
+            section="zone",
+            identifier=domain,
+            item="file",
+            value=[file]
+        )
+
+        if 'master' in zone:
             self.set_item_list(
                 section="zone",
                 identifier=domain,
@@ -250,77 +300,19 @@ class KnotConfig(KnotCtl):
             )
             for mas in zone.get("master", []):
                 acl.append(mas + "_acl")
-
-                try:
-                    self.send_block("conf-read",
-                                    section="acl",
-                                    identifier=mas + "_acl",
-                                    item="action",
-                                    )
-                    res = self.receive_block()
-                    actions = res['acl'][mas + "_acl"]['action']
-                    actions.append("notify")
-
-                    self.set_item_list(
-                        section="acl",
-                        identifier=mas + "_acl",
-                        item="action",
-                        value=actions
-                    )
-                except KnotCtlError as e:
-                    raise KnotInternalError(str(e))
-
-            self.set_item_list(
-                section="zone",
-                identifier=domain,
-                item="storage",
-                value=[so.ZONES_DIR]
-            )
+                for racl in self.remote_acl:
+                    if racl.id == (mas + "_acl"):
+                        if "notify" not in racl.actions:
+                            racl.actions.append("notify")
             
-        elif zone['role'] == 'master':
-            # set zonefile
-            path = zone.get("file")
-            if path.startswith("/"):
-                storage, file = path.rsplit("/", 1)
-            else:
-                storage = so.ZONES_DIR
-                file = path
-
-            self.set_item_list(
-                section="zone",
-                identifier=domain,
-                item="storage",
-                value=[storage]
-            )
-
-            self.set_item_list(
-                section="zone",
-                identifier=domain,
-                item="file",
-                value=[file]
-            )
-
         if 'allow-update' in zone:
+
             for up in zone.get("allow-update", []):
                 acl.append(up + "_acl")
-                try:
-                    self.send_block("conf-read",
-                                    section="acl",
-                                    identifier=up + "_acl",
-                                    item="action",
-                                    )
-                    res = self.receive_block()
-                    actions = res['acl'][up + "_acl"]['action']
-                    actions.append("update")
-
-                    self.set_item_list(
-                        section="acl",
-                        identifier=up + "_acl",
-                        item="action",
-                        value=actions
-                    )
-                except KnotCtlError as e:
-                    raise KnotInternalError(str(e))
+                for racl in self.remote_acl:
+                    if racl.id == (up + "_acl"):
+                        if "update" not in racl.actions:
+                            racl.actions.append("update")
 
         if 'notify' in zone:
             # set notify
@@ -332,87 +324,19 @@ class KnotConfig(KnotCtl):
             )
             for rec in zone.get("notify", {}).get("recipient", []):
                 acl.append(rec + "_acl")
+                for racl in self.remote_acl:
+                    if racl.id == (rec + "_acl"):
+                        if "transfer" not in racl.actions:
+                            racl.actions.append("transfer")
 
-                # try:
-                #     self.send_block("conf-read",
-                #                     section="acl",
-                #                     identifier=rec + "_acl",
-                #                     item="action",
-                #                     )
-                #     res = self.receive_block()
-                #     actions = res['acl'][rec + "_acl"]['action']
-                #     actions.append("transfer")
-                #
-                #     self.set_item_list(
-                #         section="acl",
-                #         identifier=rec + "_acl",
-                #         item="action",
-                #         value=actions
-                #     )
-                # except KnotCtlError as e:
-                #     raise KnotInternalError(str(e))
+        notin = True
+        for zacl in self.zone_acl:
+            if zacl.zone_id == domain:
+                notin = False
+        if notin:
+            self.zone_acl.append(ZoneAcl(zone_id=domain, acl=acl))
 
-        if acl:
-            # this must be done because simple-dns-model dont have acl model implementation
-            self.set_item_list(
-                section="zone",
-                identifier=domain,
-                item="acl",
-                value=acl
-            )
-
-    # Removes a DNS zone from configuration section
-    def zone_remove(self, domain_name: str, purge_data: bool) -> JsonNodeT:
-        resp = self.unset_item(section="zone", identifier=domain_name, item="domain")
-        if purge_data:
-            self.zone_purge(domain_name)
-        return resp
-
-    # Reads zone data and converts them to YANG model compliant data tree
-    def zone_read(self, domain_name: str) -> JsonNodeT:
-        if not self.connected:
-            raise KnotApiError("Knot socket is closed")
-
-        try:
-            self.send_block("zone-read", zone=domain_name)
-            resp = self.receive_block()
-        except KnotCtlError as e:
-            raise KnotInternalError(str(e))
-
-        if domain_name[-1] != ".":
-            domain_name += "."
-
-        return resp[domain_name]
-
-    # REMOTE-SERVER CONFIG
-
-    # Returns a status data of all or one specific remote-server
-    def remote_server_status(self, name: str = None) -> JsonNodeT:
-        if not self.connected:
-            raise KnotApiError("Knot socket is closed")
-
-        try:
-            self.send_block("remote-status", remote=name)
-            resp = self.receive_block()
-        except KnotCtlError as e:
-            raise KnotInternalError(str(e))
-        return resp
-
-    # Purges all zone data
-    def remote_server_purge(self, name: str = None) -> JsonNodeT:
-        if not self.connected:
-            raise KnotApiError("Knot socket is closed")
-
-        self.send_block("remote-purge", zone=name)
-        try:
-            resp = self.receive_block()
-        except KnotCtlError as e:
-            raise KnotInternalError(str(e))
-
-        return resp
-
-    # Adds a new DNS zone to configuration section
-    def remote_server_set(self, remote) -> JsonNodeT:
+    def remote_set(self, remote) -> JsonNodeT:
         name = remote.get("name")
 
         # set remote-server
@@ -431,45 +355,32 @@ class KnotConfig(KnotCtl):
                 item="comment",
                 value=remote.get("description")
             )
-        if 'port' in remote['remote']:
-            address = remote.get("remote", {}).get("ip-address") + "@" + str(remote.get("remote", {}).get("port"))
-        else:
-            address = remote.get("remote", {}).get("ip-address")
+
+        ip_addrs = []
+        address = []
+        for rem in remote['remote']:
+            ip_addrs.append(rem.get("ip-address"))
+
+            if 'port' in rem:
+                address.append(rem.get("ip-address") + "@" + str(rem.get("port")))
+            else:
+                address.append(rem.get("ip-address"))
 
         # set address
         self.set_item_list(
             section="remote",
             identifier=name,
             item="address",
-            value=[address]
+            value=address
         )
 
-        # create acl
-        self.set_item(
-            section="acl",
-            identifier=None,
-            item="id",
-            value=name + "_acl"
-        )
-        self.set_item(
-            section="acl",
-            identifier=name + "_acl",
-            item="address",
-            value=remote.get("remote", {}).get("ip-address")
-        )
-        self.set_item_list(
-            section="acl",
-            identifier=name + "_acl",
-            item="action",
-            value=["transfer"]
-        )
-
-    # Removes a DNS zone from configuration section
-    def remote_server_remove(self, name: str, purge_data: bool) -> JsonNodeT:
-        resp = self.unset_item(section="remote", identifier=name, item="name")
-        if purge_data:
-            self.zone_purge(name)
-        return resp
+        notin = True
+        for acl in self.remote_acl:
+            if acl.id == (name+"_acl"):
+                notin = False
+        if notin:
+            new = Acl(id=(name+"_acl"), ip=ip_addrs)
+            self.remote_acl.append(new)
 
     def config_set(self, config: JsonNodeT):
         if not self.connected:
@@ -483,76 +394,18 @@ class KnotConfig(KnotCtl):
         if "zones-dir" in conf:
             so.ZONES_DIR = conf["zones-dir"]
 
+        self.remote_acl = []
+        self.zone_acl = []
+        self.unset_section(section="zone")
         self.unset_section(section="acl")
+        self.unset_section(section="remote")
 
         if 'remote-server' in conf:
-            # set remote server configuration
-            self.unset_section(section="remote")
             for rem_server in conf['remote-server']:
-                self.remote_server_set(remote=rem_server)
+                self.remote_set(remote=rem_server)
 
         if 'zone' in conf['zones']:
-            # set zone configuration
-            self.unset_section(section="zone")
             for zone in conf['zones']['zone']:
                 self.zone_set(zone=zone)
 
-    # Reads all configuration data and converts them to YANG model compliant data tree
-    def config_read(self) -> JsonNodeT:
-        if not self.connected:
-            raise KnotApiError("Knot socket is closed")
-
-        try:
-            self.send_block("conf-read")
-            resp = self.receive_block()
-        except KnotCtlError as e:
-            raise KnotInternalError(str(e))
-
-        remote_servers_dict = []
-        if 'remote' in resp:
-
-            for remote in resp['remote']:
-                remote_dict = {"name": remote}
-                if 'address' in resp['remote'][remote]:
-                    if '@' in resp['remote'][remote]['address'][0]:
-                        addr, port = resp['remote'][remote]['address'][0].split('@')
-
-                        if int(port) == 53:
-                            remote_dict['remote'] = {"ip-address": addr}
-                        else:
-                            remote_dict['remote'] = {"ip-address": addr,
-                                                     "port": int(port)}
-                    else:
-                        remote_dict['remote'] = {"ip-address": resp['remote'][remote]['address'][0]}
-                    remote_servers_dict.append(remote_dict.copy())
-
-        zones_dict = []
-        if 'zone' in resp:
-
-            for zone in resp['zone']:
-                zone_dict = {'domain': zone, 'role': "master"}
-
-                if 'file' in resp['zone'][zone]:
-                    file = str(resp['zone'][zone]['file'])[2:-2]
-                    if 'storage' in resp['zone'][zone]:
-                        zone_dict['file'] = str(resp['zone'][zone]['storage'])[2:-2] + "/" + file
-                    else:
-                        zone_dict['file'] = file
-
-                if 'master' in resp['zone'][zone]:
-                    zone_dict['master'] = resp['zone'][zone]['master']
-
-                if 'notify' in resp['zone'][zone]:
-                    zone_dict['notify'] = {"recipient": resp['zone'][zone]['notify']}
-                    zone_dict['role'] = "slave"
-
-                zones_dict.append(zone_dict.copy())
-
-        conf_data = {"remote-server": [], "zones": {"zone": []}}
-
-        if remote_servers_dict:
-            conf_data['remote-server'] = remote_servers_dict
-        if zones_dict:
-            conf_data['zones']['zone'] = zones_dict
-
-        return {"cznic-dns-server-simple:dns-server": conf_data}
+        self.acl_set()

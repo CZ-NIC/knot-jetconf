@@ -25,7 +25,7 @@ module cznic-dns-server-simple {
      configuration of master and slave zones in multiple servers
      (different implementations).";
 
-  revision 2019-07-15 {
+  revision 2019-07-17 {
     description
       "Initial revision.";
   }
@@ -136,7 +136,15 @@ module cznic-dns-server-simple {
         "Definitions of remote servers.";
       uses entry-name;
       uses description;
-      container remote {
+      list remote {
+        key "id";
+        min-elements "1";
+        leaf id {
+            type uint8;
+            description
+              "Opaque numeric ID of remote.";
+          }
+
         description
           "Parameters of the remote server.";
         uses endpoint-address {
