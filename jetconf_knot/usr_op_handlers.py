@@ -21,9 +21,11 @@ class OpHandlersContainer:
             info("Setting datastore configuration to KnotDNS")
             so.KNOT.knot_connect()
             so.KNOT.begin()
-            so.KNOT.config_set(self.ds.get_data_root().add_defaults().value)
+            root_nv = self.ds.get_data_root().add_defaults().value
+            so.KNOT.config_set(root_nv)
             so.KNOT.commit()
             so.KNOT.knot_disconnect()
+
         else:
             error("KnotDNS reload failed, reason: {}".format(res))
 
@@ -36,7 +38,8 @@ class OpHandlersContainer:
             info("Setting datastore configuration to KnotDNS")
             so.KNOT.knot_connect()
             so.KNOT.begin()
-            so.KNOT.config_set(self.ds.get_data_root().add_defaults().value)
+            root_nv = self.ds.get_data_root().add_defaults().value
+            so.KNOT.config_set(root_nv)
             so.KNOT.commit()
             so.KNOT.knot_disconnect()
         else:
@@ -51,7 +54,8 @@ class OpHandlersContainer:
             info("Setting datastore configuration to KnotDNS")
             so.KNOT.knot_connect()
             so.KNOT.begin()
-            so.KNOT.config_set(self.ds.get_data_root().add_defaults().value)
+            root_nv = self.ds.get_data_root().add_defaults().value
+            so.KNOT.config_set(root_nv)
             so.KNOT.commit()
             so.KNOT.knot_disconnect()
         else:
